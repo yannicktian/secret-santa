@@ -157,7 +157,9 @@ local (Node 24, sur orca-server), et la CI de GitHub (Node 26).
 
 ### Pas encore constaté
 
-Aucun agent n'a lu ni écrit la base : ces points ne se voient qu'avec le vrai tirage.
+Aucun agent n'a lu ni écrit la base. Yannick l'a fait le 22 novembre 2026 en essayant le
+site (il a choisi son mot de passe et vu son tirage) : la lecture et l'écriture par les
+fonctions marchent en production ; le reste du constat humain suit l'issue #16.
 
 | Point | Se constate |
 |---|---|

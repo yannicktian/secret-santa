@@ -6,9 +6,9 @@
 
 ## Ce qui t'attend
 
-1. **Si tu veux un autre tirage** : sur la page réservée, « Refaire le tirage », puis
-   confirmer. La confirmation doit dire « 1 personne a déjà vu son tirage. » (toi) ;
-   sinon, quelqu'un d'autre est déjà venu.
+1. **Si tu veux un autre tirage** (tu as déjà vu le tien en essayant le site) : sur la page
+   réservée, « Refaire le tirage », puis confirmer. La confirmation doit dire « 1 personne a
+   déjà vu son tirage. » (toi) ; sinon, quelqu'un d'autre est déjà venu.
 2. **Le constat de mise en ligne**, étape par étape, dans
    l'[issue #16](https://github.com/yannicktian/secret-santa/issues/16) : la page réservée,
    ton mot de passe de participant (il fait le vrai tirage), ton paquet, la page réservée à
@@ -21,13 +21,16 @@ Réponds dans l'issue #1, d'un mot (« d'accord ») ou par ce que tu aurais chan
 
 - Texte des boutons principaux en 20 px au lieu des 18,4 px de la maquette
   ([PR #25](https://github.com/yannicktian/secret-santa/pull/25)). Recommandé : garder.
-- Tâche 5 acceptée à 828 lignes au-delà de la limite de 400, le style de tous les écrans
+- Tâche 5 acceptée à 828 lignes hors tests, au-delà de la limite de 400, le style de tous les écrans
   étant la copie de la maquette ([PR #22](https://github.com/yannicktian/secret-santa/pull/22)).
   Recommandé : garder.
-- Trois tâches ajoutées après relecture, avant la mise en ligne : double appui
-  ([#28](https://github.com/yannicktian/secret-santa/pull/28)), délai de 15 secondes des
-  appels ([#30](https://github.com/yannicktian/secret-santa/pull/30)), CI durcie après
-  l'audit ([#35](https://github.com/yannicktian/secret-santa/pull/35)). Recommandé : garder.
+- Deux tâches ajoutées après relecture, avant la mise en ligne, double appui
+  ([#28](https://github.com/yannicktian/secret-santa/pull/28)) et délai de 15 secondes des
+  appels ([#30](https://github.com/yannicktian/secret-santa/pull/30)), et la CI durcie
+  après l'audit ([#35](https://github.com/yannicktian/secret-santa/pull/35)). Recommandé : garder.
+- Le critère de S1 réécrit par l'indicateur de chargement puis par le toucher sans attente
+  ([#41](https://github.com/yannicktian/secret-santa/pull/41),
+  [#42](https://github.com/yannicktian/secret-santa/pull/42)). Recommandé : garder.
 - L'accueil charge l'état des sept prénoms dès son ouverture ; un état périmé coûte au pire
   un essai raté, comme T1 ([PR #42](https://github.com/yannicktian/secret-santa/pull/42)).
   Recommandé : garder.
@@ -48,9 +51,9 @@ Réponds dans l'issue #1, d'un mot (« d'accord ») ou par ce que tu aurais chan
 
 ## Points d'attention
 
-- **Pas encore vu pour de vrai** : l'écriture dans la base de production avant ton constat
-  (seules des lectures ont été faites par les agents) ; le champ et le bouton au-dessus du
-  clavier sur un vrai téléphone (essayé dans Chromium seulement).
+- **Pas encore vu pour de vrai** : le champ et le bouton au-dessus du clavier sur un vrai
+  téléphone (essayé dans Chromium seulement). La base de production n'a été lue et écrite
+  que par toi, en essayant le site ; aucun agent ne l'a lue ni écrite.
 - **Adresse de production** : elle n'est plus dans le dépôt, devenu public ; les anciennes
   adresses, visibles dans l'historique, répondent 404.
 - **Limites acceptées** : qui a le mot de passe d'administration peut voir un tirage en
@@ -69,6 +72,7 @@ Réponds dans l'issue #1, d'un mot (« d'accord ») ou par ce que tu aurais chan
 |---|---|---|---|---|---|---|---|---|
 | spec | 2 | 2 | 0 | 0 | 0 | 0 | 0 | 0 |
 | architecture et découpage | 1 | 1 | 0 | 0 | 0 | 0 | 0 | 0 |
+| évolution de factory | 1 | 1 | 0 | 0 | 0 | 0 | 0 | 0 |
 
 Les fusions de tâches n'attendent pas l'humain (restrictions du projet) ; aucune n'a eu
 de troisième « à corriger ».
@@ -87,5 +91,5 @@ Deux paquets npm lancés par erreur sur orca-server, vérifiés sans danger.
 - factory : faire de l'étape « Fusionner » du cycle d'une tâche un script qui refuse la
   fusion tant que l'intégration continue du dernier commit n'a pas réussi (une fusion est
   partie sur une vérification en échec, due à la facturation GitHub).
-- factory : une petite itération qui touche la spec, chemin sensible ici, passe par un
-  relecteur ; à écrire dans la petite itération ou dans les chemins sensibles du projet.
+- factory : une petite itération ou une tâche qui touche la spec, chemin sensible ici, passe
+  par un relecteur, et ses critères changés vont dans « À confirmer ».
