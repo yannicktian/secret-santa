@@ -14,8 +14,11 @@ const parisDay = new Intl.DateTimeFormat("en-CA", {
  * @returns {string | null}
  */
 export function countdown(now) {
-  const [year, month, day] = parisDay.format(now).split("-").map(Number);
-  const days = Math.round((christmas - Date.UTC(year, month - 1, day)) / 86_400_000);
+  const part = (/** @type {string} */ type) =>
+    Number(parisDay.formatToParts(now).find((p) => p.type === type)?.value);
+  const days = Math.round(
+    (christmas - Date.UTC(part("year"), part("month") - 1, part("day"))) / 86_400_000,
+  );
   if (days < 0) return null;
   if (days === 0) return "C'est aujourd'hui !";
   if (days === 1) return "C'est demain !";

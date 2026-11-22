@@ -196,3 +196,26 @@ test("« Ce n'est pas moi » comes back home; nothing is kept on the device", as
   expect(stored).toEqual({ local: 0, session: 0, databases: 0 });
   expect(await page.evaluate(() => history.length)).toBe(2);
 });
+
+test("a late answer does not replace a newer screen", async ({ page }) => {
+  await page.route("**/api/participant", async (route) => {
+    if (route.request().postDataJSON().participant === "lea") {
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+    }
+    return route.fulfill({ json: { hasPassword: false } });
+  });
+  await page.goto("/");
+  await page.getByRole("button", { name: "Léa" }).click();
+  await page.getByRole("button", { name: "Mamet" }).click();
+  await expect(page.getByText("Bonjour Mamet !")).toBeVisible();
+  await page.waitForTimeout(2000);
+  await expect(page.locator(".hello")).toHaveText("Bonjour Mamet !");
+});
+
+test("after a second failure, the focus is on « Réessayer »", async ({ page }) => {
+  await page.route("**/api/participant", (route) => route.abort("internetdisconnected"));
+  await page.goto("/");
+  await page.getByRole("button", { name: "Léa" }).click();
+  await page.getByRole("button", { name: "Réessayer" }).click();
+  await expect(page.getByRole("button", { name: "Réessayer" })).toBeFocused();
+});

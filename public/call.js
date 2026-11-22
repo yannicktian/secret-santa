@@ -33,6 +33,7 @@ function showBanner(retry) {
   });
   banner.append(text, button);
   document.body.append(banner);
+  if (!document.activeElement || document.activeElement === document.body) button.focus();
 }
 
 /**

@@ -31,8 +31,22 @@ function element(tag, className, ...children) {
   return node;
 }
 
+/** Grows at each screen change or tap, so that a late answer does not replace a newer screen. */
+let shown = 0;
+
+/**
+ * Takes a turn before a call: the function returned says whether the answer is still the
+ * last one asked for, with no screen change nor tap since.
+ */
+function turn() {
+  shown += 1;
+  const current = shown;
+  return () => current === shown;
+}
+
 /** Empties the screen, the banner and the scroll, before showing another screen. */
 function clear() {
+  shown += 1;
   clearBanner();
   root.replaceChildren();
   window.scrollTo(0, 0);
@@ -42,15 +56,18 @@ function clear() {
  * @param {{ id: string, name: string }} participant
  */
 async function choose(participant) {
+  const isCurrent = turn();
   const { data } = await call("/api/participant", { participant: participant.id });
+  if (!isCurrent()) return;
   clear();
   showPassword(root, {
     participant,
     hasPassword: data.hasPassword === true,
     home,
+    turn,
     gift: (/** @type {string} */ receiver) => {
       clear();
-      showGift(root, { receiver, home });
+      showGift(root, { receiver, home, turn });
     },
   });
 }
