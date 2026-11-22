@@ -194,7 +194,7 @@
     <tr><td>Le cache</td><td><code>no-store</code> sur les fonctions et les deux pages HTML</td></tr>
   </table></div>
   <p>En-têtes de <code>vercel.json</code> : <code>Content-Security-Policy</code> (<code>default-src 'self'</code>, Google Fonts, <code>frame-ancestors 'none'</code>, <code>base-uri 'none'</code>, <code>form-action 'self'</code>), <code>nosniff</code>, <code>Referrer-Policy: no-referrer</code>, <code>X-Robots-Tag: noindex</code>.</p>
-  <p><strong>Limites acceptées</strong> (« rien n'est très sensible ») : un mot de passe de quatre lettres se devine à 5 essais par minute pour qui s'acharne des jours ; n'importe qui peut bloquer un participant ou la page réservée une minute ; qui touche le prénom d'un autre à sa première visite voit son tirage.</p>
+  <p><strong>Limites acceptées</strong> (« rien n'est très sensible ») : un mot de passe de quatre lettres se devine à 5 essais par minute pour qui s'acharne des jours ; n'importe qui peut bloquer un participant ou la page réservée une minute ; qui touche le prénom d'un autre à sa première visite voit son tirage ; qui détient le mot de passe d'administration peut effacer le mot de passe d'un participant, en choisir un pour lui et voir son tirage, la seule trace étant que la personne retombe sur « C'est ta première visite ». Seul Yannick a ce mot de passe ; il est conseillé de le choisir long (5 essais par minute).</p>
 </section>
 
 <section>

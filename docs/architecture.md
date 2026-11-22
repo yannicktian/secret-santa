@@ -276,7 +276,11 @@ Limites acceptées (« rien n'est très sensible », décision de Yannick) : un 
 quatre lettres se devine à raison de 5 essais par minute pour qui s'acharne des jours ;
 n'importe qui peut bloquer un participant ou la page réservée une minute en se trompant
 cinq fois ; qui choisit le prénom d'un autre à sa première visite voit son tirage
-(« États vides et cassés » de la spec).
+(« États vides et cassés » de la spec) ; qui détient le mot de passe d'administration peut
+effacer le mot de passe d'un participant, en choisir un pour lui et voir son tirage, et la
+seule trace est que la personne retombe sur « C'est ta première visite » (accepté par
+Yannick le 22 novembre 2026). Seul Yannick a ce mot de passe ; il est conseillé de le
+choisir long, puisqu'il se devine à 5 essais par minute.
 
 ## Hébergement et déploiement
 
