@@ -51,3 +51,16 @@ details>summary{cursor:pointer;font-weight:600}
 details[open]>summary{margin-bottom:8px}
 details ul{margin-top:4px}
 .decision{display:flex;flex-direction:column;gap:4px}
+.diagram{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:12px;overflow-x:auto}
+.diagram svg{display:block;width:100%;min-width:560px;height:auto;font-family:var(--sans)}
+.diagram .box{fill:var(--bg);stroke:var(--line);stroke-width:1.5}
+.diagram .hot{fill:var(--accent-soft);stroke:var(--accent);stroke-width:1.5}
+.diagram .t{fill:var(--fg);font-size:14px;font-weight:700}
+.diagram .s{fill:var(--muted);font-size:12px}
+.diagram .m{fill:var(--fg);font-family:var(--mono);font-size:12px}
+.diagram .a{stroke:var(--muted);stroke-width:1.5;fill:none;marker-end:url(#arrow)}
+.diagram .ah{fill:var(--muted)}
+.lots{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}
+.lot{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:10px 12px;display:flex;flex-direction:column;gap:6px;font-size:.92rem}
+.lot strong{font-family:var(--mono);font-size:.8rem;color:var(--accent);letter-spacing:.04em;text-transform:uppercase}
+.lot .wait-for{color:var(--muted);font-size:.85rem}

@@ -1,0 +1,279 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="claude:viewport-fit-sides" content="cover">
+<title>Architecture du site</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Pixelify+Sans:wght@500;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<nav><a href="index.html">Accueil</a><a href="epics/1-tirage.html">Epic 1 — Le tirage</a><a href="architecture.html">Architecture</a></nav>
+<main>
+<header style="display:flex;flex-direction:column;gap:8px">
+  <span class="eyebrow">secret-santa · architecture</span>
+  <h1>Comment le site est construit</h1>
+  <p>Le site tel que l'epic <a href="https://github.com/yannicktian/secret-santa/issues/1">#1</a> le construit. La <a href="epics/1-tirage.html">spec du tirage</a> fait foi pour le comportement et les mots ; le <a href="https://github.com/yannicktian/secret-santa/blob/main/docs/plans/tirage.md">découpage</a> donne les tâches ; l'avancement vit dans l'issue de l'epic.</p>
+  <p class="source">Le Markdown fait foi : <a href="https://github.com/yannicktian/secret-santa/blob/main/docs/architecture.md">docs/architecture.md</a>.</p>
+</header>
+
+<section>
+  <h2>Vue d'ensemble</h2>
+  <div class="diagram"><svg viewBox="0 0 760 290" role="img" aria-labelledby="schema-titre">
+    <title id="schema-titre">Le téléphone charge les pages statiques, appelle les fonctions Vercel avec le mot de passe ; seules les fonctions lisent et écrivent la base Redis.</title>
+    <defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0 0L10 5L0 10z"/></marker></defs>
+    <rect class="box" x="10" y="40" width="190" height="210" rx="8"/>
+    <text class="t" x="24" y="66">Téléphone</text>
+    <text class="s" x="24" y="88">navigateur, ou celui</text>
+    <text class="s" x="24" y="104">de WhatsApp, d'un SMS</text>
+    <text class="s" x="24" y="136">les écrans de la spec</text>
+    <text class="s" x="24" y="152">en JavaScript</text>
+    <text class="s" x="24" y="184">rien n'est retenu :</text>
+    <text class="s" x="24" y="200">ni cookie, ni stockage</text>
+    <rect class="box" x="270" y="10" width="230" height="270" rx="8"/>
+    <text class="t" x="284" y="34">Vercel · une adresse</text>
+    <rect class="hot" x="284" y="50" width="202" height="76" rx="6"/>
+    <text class="t" x="298" y="74">Pages statiques</text>
+    <text class="m" x="298" y="94">public/</text>
+    <text class="s" x="298" y="112">/ et /reservee, sans build</text>
+    <rect class="hot" x="284" y="146" width="202" height="118" rx="6"/>
+    <text class="t" x="298" y="170">Fonctions</text>
+    <text class="m" x="298" y="190">api/participant</text>
+    <text class="m" x="298" y="206">api/choose-password</text>
+    <text class="m" x="298" y="222">api/open-gift</text>
+    <text class="m" x="298" y="238">api/reserved</text>
+    <text class="s" x="298" y="256">règles dans lib/</text>
+    <rect class="box" x="570" y="80" width="180" height="170" rx="8"/>
+    <text class="t" x="584" y="104">Upstash Redis</text>
+    <text class="m" x="584" y="130">draw</text>
+    <text class="m" x="584" y="150">password:&lt;id&gt;</text>
+    <text class="m" x="584" y="170">fails:&lt;id&gt;</text>
+    <text class="m" x="584" y="190">lock:&lt;id&gt;</text>
+    <text class="s" x="584" y="220">lue et écrite par</text>
+    <text class="s" x="584" y="236">les seules fonctions</text>
+    <path class="a" d="M200 88H282"/>
+    <text class="s" x="210" y="80">pages</text>
+    <path class="a" d="M200 180H282"/>
+    <text class="s" x="206" y="172">mot de passe</text>
+    <path class="a" d="M282 214H200"/>
+    <text class="s" x="206" y="232">son prénom</text>
+    <text class="s" x="206" y="246">tiré, seul</text>
+    <path class="a" d="M486 190H568"/>
+    <path class="a" d="M568 214H486"/>
+  </svg></div>
+  <ul>
+    <li><strong>Pages statiques</strong> dans <code>public/</code>, servies telles quelles : pas de framework, pas de bundler, pas de build. Le JavaScript du navigateur est en modules ES natifs.</li>
+    <li><strong>Quatre fonctions Vercel</strong> dans <code>api/</code> (plus <code>api/health.js</code>), en JavaScript, qui appellent les règles du domaine de <code>lib/</code>. Elles seules lisent et écrivent la base.</li>
+    <li><strong>Une base Redis Upstash</strong>, installée sur le projet Vercel par la Vercel Marketplace : le tirage, les empreintes des mots de passe, les compteurs d'essais.</li>
+    <li><strong>Aucune session</strong> : le navigateur ne garde rien entre deux visites (S5). Chaque appel qui donne un tirage ou ouvre la page réservée porte le mot de passe, vérifié à chaque fois.</li>
+  </ul>
+</section>
+
+<section>
+  <h2>Pièces et emplacements</h2>
+  <div class="table"><table>
+    <tr><th>Emplacement</th><th>Rôle</th></tr>
+    <tr><td><code>public/index.html</code></td><td>L'accueil et le conteneur des écrans du participant</td></tr>
+    <tr><td><code>public/style.css</code></td><td>Le style de tous les écrans, repris de la maquette</td></tr>
+    <tr><td><code>public/app.js</code></td><td>L'état en mémoire, l'accueil (S1), le passage d'un écran à l'autre sans historique (S5), les appels et le bandeau « Oups… » avec « Réessayer »</td></tr>
+    <tr><td><code>public/countdown.js</code></td><td>Le compte à rebours, à l'heure de Paris</td></tr>
+    <tr><td><code>public/screens/password.js</code></td><td>Choisir son mot de passe (S2), le redonner (S3)</td></tr>
+    <tr><td><code>public/screens/gift.js</code></td><td>Le paquet (S4)</td></tr>
+    <tr><td><code>public/reservee.html</code>, <code>public/reserved.js</code></td><td>La page réservée (S6), à <code>/reservee</code></td></tr>
+    <tr><td><code>api/participant.js</code></td><td>Le participant a-t-il un mot de passe ?</td></tr>
+    <tr><td><code>api/choose-password.js</code></td><td>Choisir son mot de passe, faire le tirage s'il n'existe pas, donner le prénom tiré (S2, S7)</td></tr>
+    <tr><td><code>api/open-gift.js</code></td><td>Redonner son mot de passe et recevoir le prénom tiré (S3)</td></tr>
+    <tr><td><code>api/reserved.js</code></td><td>La page réservée : liste des états, effacement (S6)</td></tr>
+    <tr><td><code>api/health.js</code></td><td>La santé du déploiement, sans lire aucune donnée</td></tr>
+    <tr><td><code>lib/participants.js</code></td><td>Les sept participants, dans l'ordre</td></tr>
+    <tr><td><code>lib/draw.js</code></td><td>Le tirage, au hasard uniforme (S7)</td></tr>
+    <tr><td><code>lib/password.js</code></td><td>Normalisation, règle des 4 caractères, empreinte scrypt</td></tr>
+    <tr><td><code>lib/attempts.js</code></td><td>La règle des 5 essais ratés</td></tr>
+    <tr><td><code>lib/gift.js</code>, <code>lib/reserved.js</code></td><td>Les actions du participant, celles de la page réservée</td></tr>
+    <tr><td><code>lib/store.js</code>, <code>lib/memory-store.js</code></td><td>Le stockage Redis et son double en mémoire</td></tr>
+    <tr><td><code>lib/http.js</code></td><td>Corps JSON borné, réponses <code>no-store</code></td></tr>
+    <tr><td><code>scripts/dev-server.js</code></td><td>Le serveur local des tests et des captures, sur le double en mémoire</td></tr>
+    <tr><td><code>tests/unit/</code>, <code>tests/e2e/</code>, <code>tests/securite/</code></td><td>Tests <code>node:test</code>, tests Playwright des écrans, test de fuite</td></tr>
+    <tr><td><code>vercel.json</code>, <code>.github/workflows/check.yml</code></td><td>Dossier servi, adresses, en-têtes, région ; intégration continue</td></tr>
+  </table></div>
+  <h3>Noms du code</h3>
+  <p>Participant : <code>participant</code> (<code>yannick</code>, <code>lea</code>, <code>christine</code>, <code>guigui</code>, <code>mamet</code>, <code>anne</code>, <code>loulou</code>) · tirage : <code>draw</code>, la personne à qui on offre : <code>receiver</code> · mot de passe : <code>password</code>, son empreinte : <code>passwordHash</code> · paquet : <code>gift</code> · page réservée : <code>reserved</code> · mot de passe d'administration : <code>adminPassword</code> (<code>ADMIN_PASSWORD</code>) · effacer le mot de passe : <code>erasePassword</code>.</p>
+</section>
+
+<section>
+  <h2>Les fonctions</h2>
+  <p>Réponses JSON en <code>Cache-Control: no-store</code>. Signature Web de Vercel : <code>export async function POST(request)</code>. Les appels <code>POST</code> exigent du JSON (sinon 415) de 2 Ko au plus (sinon 413) ; un participant inconnu donne 400.</p>
+  <div class="table"><table>
+    <tr><th>Appel</th><th>Corps</th><th>Réponses</th></tr>
+    <tr><td><code>POST /api/participant</code></td><td><code>{ participant }</code></td><td>200 <code>{ hasPassword }</code></td></tr>
+    <tr><td><code>POST /api/choose-password</code></td><td><code>{ participant, password }</code></td><td>200 <code>{ receiver }</code> · 422 <code>too_short</code> · 409 <code>already_chosen</code> · 429 <code>locked</code></td></tr>
+    <tr><td><code>POST /api/open-gift</code></td><td><code>{ participant, password }</code></td><td>200 <code>{ receiver }</code> · 401 <code>wrong_password</code> · 429 <code>locked</code> · 409 <code>no_password</code></td></tr>
+    <tr><td><code>POST /api/reserved</code></td><td><code>{ password, action: "list" }</code> ou <code>"erase"</code> avec <code>participant</code></td><td>200 <code>{ participants: [{ id, name, hasPassword }] }</code> · 401 · 429</td></tr>
+    <tr><td><code>GET /api/health</code></td><td>—</td><td>200 <code>{ ok, store, reservedPage }</code></td></tr>
+  </table></div>
+  <p>Toute autre réponse, une erreur 5xx ou un réseau coupé, fait afficher « Oups, le site ne répond pas… » sur l'écran en cours.</p>
+  <div class="example"><span class="eyebrow">Choisir son mot de passe (S2, S7)</span>
+    <ol>
+      <li>Moins de 4 caractères, espaces au bout retirés : 422 <code>too_short</code>.</li>
+      <li>Le tirage est lu ; s'il n'existe pas, il est fait et écrit une seule fois. Avant le mot de passe, pour qu'une coupure ne laisse pas un mot de passe sans paquet.</li>
+      <li>L'empreinte n'est écrite que si le participant n'en a pas (<code>SET … NX</code>).</li>
+      <li>S'il en avait déjà une : même mot de passe, le prénom tiré ; autre mot de passe, essai raté compté et 409 <code>already_chosen</code> (l'écran passe à « Redonner ») ; blocage en cours, 429. Un mot de passe n'est jamais remplacé, ni deviné par cet appel.</li>
+    </ol></div>
+  <div class="example"><span class="eyebrow">Redonner son mot de passe (S3)</span>
+    <ol>
+      <li>Participant bloqué : 429 <code>locked</code>, sans vérifier, même le bon.</li>
+      <li>Pas de mot de passe (effacé entre-temps) : 409 <code>no_password</code>, l'écran passe à « Choisir ».</li>
+      <li>Juste : compteur à zéro, le prénom tiré.</li>
+      <li>Faux : essai compté ; au cinquième de suite, blocage d'une minute et 429 (c'est lui qui affiche « Beaucoup d'essais ratés… ») ; sinon 401.</li>
+    </ol></div>
+  <div class="example"><span class="eyebrow">La page réservée (S6)</span>
+    <p>Chaque appel porte le mot de passe d'administration, comparé tel quel à <code>ADMIN_PASSWORD</code>, en temps constant ; même règle des 5 essais, avec l'identifiant <code>admin</code>. Sans <code>ADMIN_PASSWORD</code>, tout appel répond 503 : la page ne s'ouvre jamais sans mot de passe posé. L'effacement supprime l'empreinte et rien d'autre. Jamais de tirage, d'empreinte ni de mot de passe dans la réponse.</p></div>
+</section>
+
+<section>
+  <h2>Données</h2>
+  <p>Une seule base Redis de production. Valeurs en chaînes, client créé avec <code>automaticDeserialization: false</code>.</p>
+  <div class="table"><table>
+    <tr><th>Clé</th><th>Valeur</th><th>Durée</th><th>Écrite par</th></tr>
+    <tr><td><code>draw</code></td><td>JSON des identifiants, par exemple fictif <code>{"yannick":"christine",…}</code></td><td>Sans fin</td><td><code>SET … NX</code>, une fois</td></tr>
+    <tr><td><code>password:&lt;id&gt;</code></td><td><code>scrypt$16384$8$1$&lt;sel&gt;$&lt;empreinte&gt;</code></td><td>Sans fin</td><td><code>SET … NX</code> ; <code>DEL</code> à l'effacement</td></tr>
+    <tr><td><code>fails:&lt;id&gt;</code></td><td>Essais ratés de suite (participant ou <code>admin</code>)</td><td>Sans fin</td><td><code>INCR</code> ; <code>DEL</code> au bon essai ou au blocage</td></tr>
+    <tr><td><code>lock:&lt;id&gt;</code></td><td><code>1</code></td><td>60 secondes</td><td><code>SET … EX 60</code> au cinquième raté</td></tr>
+  </table></div>
+  <p>Sur un déploiement de revue, chaque clé est préfixée par <code>preview:&lt;commit&gt;:</code> : chaque revue part d'une base vide, dans la base de test.</p>
+  <h3>Le tirage</h3>
+  <ul>
+    <li>Mélange de Fisher-Yates avec <code>crypto.randomInt</code>, recommencé tant que quelqu'un se tire lui-même : chacun des 1 854 tirages possibles pour sept participants a la même chance, paires réciproques comprises. 2,7 mélanges en moyenne.</li>
+    <li>Lu, et s'il manque, proposé et écrit par <code>SET draw … NX</code> : si deux personnes valident en même temps, Redis n'en garde qu'un, et chacune relit celui-là. Rien ne le supprime ni ne le réécrit.</li>
+  </ul>
+  <h3>Les mots de passe</h3>
+  <ul>
+    <li><strong>Normalisation</strong> : espaces au bout retirés, accents retirés (NFD, marques <code>\p{M}</code>), minuscules : « Noël », « noel » et « NOEL » donnent <code>noel</code>.</li>
+    <li><strong>Longueur</strong> : au moins 4 caractères, en points de code, sans les espaces au bout, en NFC. Aucune autre règle.</li>
+    <li><strong>Empreinte</strong> : scrypt de <code>node:crypto</code>, sel de 16 octets, N = 16384, r = 8, p = 1, 32 octets (74 ms constatés). Vérification par <code>timingSafeEqual</code>. Jamais en clair, jamais dans un journal.</li>
+  </ul>
+  <h3>Le stockage</h3>
+  <p>Six opérations, reçues en paramètre par les règles du domaine : <code>get</code>, <code>mget</code>, <code>setIfAbsent</code>, <code>setWithExpiry</code>, <code>incr</code>, <code>del</code>. Le double en mémoire seulement avec <code>SECRET_SANTA_STORE=memory</code> et hors de Vercel ; sinon Redis par <code>Redis.fromEnv()</code> (<code>UPSTASH_REDIS_REST_URL</code> et <code>…_TOKEN</code>, ou <code>KV_REST_API_URL</code> et <code>…_TOKEN</code>, lu dans le code de la version 1.41.0) ; sans l'un ni l'autre, une erreur, jamais un repli sur la mémoire.</p>
+</section>
+
+<section>
+  <h2>Les écrans</h2>
+  <ul>
+    <li>Un seul document pour le participant, dont le contenu change à chaque écran, sans entrée d'historique : le retour du navigateur quitte le site au lieu de réafficher un paquet. Une page restaurée depuis le cache du navigateur revient à l'accueil.</li>
+    <li>Rien n'est retenu : ni cookie, ni stockage du navigateur. Le mot de passe tapé et le prénom tiré ne vivent que dans des variables, effacées au retour à l'accueil.</li>
+    <li>La page réservée garde le mot de passe d'administration le temps de la visite ; la recharger le redemande.</li>
+    <li>Le style de la maquette, polices Pixelify Sans et Atkinson Hyperlegible depuis Google Fonts, un seul thème. Ni attribut <code>style</code> ni script en ligne : la politique de sécurité du contenu les refuse.</li>
+    <li>Le compte à rebours prend la date du jour à Paris sur l'horloge de l'appareil.</li>
+    <li>Sur une erreur réseau ou 5xx, l'écran reste, avec le bandeau et « Réessayer », qui refait le même appel ; ce qui était tapé reste.</li>
+  </ul>
+</section>
+
+<section>
+  <h2>Sécurité</h2>
+  <div class="table"><table>
+    <tr><th>Ce qui est protégé</th><th>Comment</th></tr>
+    <tr><td>Le tirage</td><td>Ne sort que par <code>choose-password</code> et <code>open-gift</code>, mot de passe vérifié, et seulement le prénom tiré par ce participant. Jamais en entier, jamais qui offre à qui. La page réservée n'y a pas accès</td></tr>
+    <tr><td>Les mots de passe</td><td>Empreinte scrypt salée, jamais renvoyée ; 5 essais ratés de suite bloquent une minute</td></tr>
+    <tr><td>Le mot de passe d'administration</td><td>Variable Vercel sensible posée par Yannick ; aucun agent ne la connaît ; temps constant ; 5 essais</td></tr>
+    <tr><td>Les jetons de la base</td><td>Posés par l'intégration, lus par les seules fonctions ; aucun fichier de <code>public/</code> ne les cite</td></tr>
+    <tr><td>L'appareil prêté</td><td>Rien n'est retenu (S5)</td></tr>
+    <tr><td>Le cache</td><td><code>no-store</code> sur les fonctions et les deux pages HTML</td></tr>
+  </table></div>
+  <p>En-têtes de <code>vercel.json</code> : <code>Content-Security-Policy</code> (<code>default-src 'self'</code>, Google Fonts, <code>frame-ancestors 'none'</code>, <code>base-uri 'none'</code>, <code>form-action 'self'</code>), <code>nosniff</code>, <code>Referrer-Policy: no-referrer</code>, <code>X-Robots-Tag: noindex</code>.</p>
+  <p><strong>Limites acceptées</strong> (« rien n'est très sensible ») : un mot de passe de quatre lettres se devine à 5 essais par minute pour qui s'acharne des jours ; n'importe qui peut bloquer un participant ou la page réservée une minute ; qui touche le prénom d'un autre à sa première visite voit son tirage.</p>
+</section>
+
+<section>
+  <h2>Hébergement et déploiement</h2>
+  <ul>
+    <li><strong>Vercel</strong>, offre gratuite, projet <code>secret-santa</code> relié au repo, une seule adresse. Node.js 24, région <code>fra1</code> (Francfort), base Upstash à Francfort. <code>vercel.json</code> sert <code>public/</code> sans build, avec <code>cleanUrls</code> pour <code>/reservee</code>.</li>
+    <li><strong>Production</strong> : chaque fusion sur <code>main</code>. Variables : celles de l'intégration Upstash, <code>ADMIN_PASSWORD</code>.</li>
+    <li><strong>Revue</strong> : chaque branche poussée, sur une seconde base Upstash, de test, reliée au seul environnement Preview, avec un mot de passe d'administration fictif. Protégée par l'authentification Vercel.</li>
+    <li><strong>Sur la production, les agents ne font que lire sans donnée</strong> : <code>GET /</code>, <code>GET /reservee</code>, <code>GET /api/health</code>. Jamais <code>choose-password</code>, <code>open-gift</code> ni <code>reserved</code> : un mot de passe choisi par un agent ferait le vrai tirage.</li>
+    <li><strong>Jeton</strong> : la CLI Vercel avec <code>VERCEL_TOKEN</code>, chargé depuis <code>~/.config/secret-santa/vercel.env</code>, jamais affiché.</li>
+  </ul>
+  <p><strong>Non vérifié</strong> (propre à Vercel ou Upstash, sans jeton pour l'essayer) : la signature Web des fonctions sans framework, <code>outputDirectory</code> et <code>cleanUrls</code>, les noms des variables de l'intégration, <code>VERCEL_ENV</code> et <code>VERCEL_GIT_COMMIT_SHA</code> à l'exécution, la région Francfort d'Upstash, le nombre de bases gratuites, les quotas, la conservation d'une base gratuite peu utilisée. Les tâches 6 et 13 le constatent.</p>
+</section>
+
+<section>
+  <h2>Contrôles et tests</h2>
+  <ul>
+    <li><code>npm run check</code> : Biome (lint et format), <code>tsc</code> (JavaScript vérifié par JSDoc, strict), <code>node --test</code>.</li>
+    <li><code>npm run test:e2e</code> : Playwright (Chromium) contre le serveur local sur le double en mémoire, à 360 et 1280 pixels ; avec <code>CAPTURES=1</code>, les captures dans <code>captures/</code>, ignoré par git.</li>
+    <li>Pas de build. Intégration continue GitHub Actions à chaque pull request et poussée sur <code>main</code>.</li>
+    <li>Dépendances aux versions exactes : <code>@upstash/redis</code> 1.41.0 (seule dépendance du site, plus <code>uncrypto</code>), et pour le développement <code>@biomejs/biome</code> 2.6.8, <code>typescript</code> 7.0.2, <code>@types/node</code>, <code>@playwright/test</code> 1.65.1, installées et essayées le 22 novembre 2026.</li>
+  </ul>
+  <div class="table"><table>
+    <tr><th>Ce qui est prouvé</th><th>Comment</th></tr>
+    <tr><td>Le tirage est uniforme</td><td>185 400 tirages simulés à graine fixe : les 1 854 tirages sortent, aucun point fixe, khi-deux sous 2 142 (faux échec : moins d'un sur un million) ; le test échoue sur un algorithme biaisé (Sattolo)</td></tr>
+    <tr><td>Un seul tirage</td><td>Deux choix simultanés sur un double qui intercale les appels : un seul tirage écrit</td></tr>
+    <tr><td>Les essais ratés</td><td>Horloge avancée : remise à zéro, blocage, déblocage après 60 secondes</td></tr>
+    <tr><td>Rien de secret envoyé</td><td>Un parcours complet avec des mots de passe témoins : aucune réponse ne contient d'empreinte, de sel, de mot de passe, <code>ADMIN_PASSWORD</code>, ni le tirage d'un autre</td></tr>
+    <tr><td>Les écrans</td><td>Mots exacts, états, tailles, 360 pixels, appels interceptés ; puis le parcours complet sans interception</td></tr>
+  </table></div>
+  <p>Jamais la base de production : le double en mémoire, ou la base de test sur un déploiement de revue. Tirages et mots de passe fictifs.</p>
+</section>
+
+<section>
+  <h2>Règles pour les tâches</h2>
+  <ul>
+    <li><strong>Taille</strong> : 400 lignes modifiées au plus, hors tests, <code>package-lock.json</code> et captures.</li>
+    <li><strong>Chemins sensibles</strong> : <code>api/**</code>, <code>lib/**</code>, <code>scripts/dev-server.js</code>, <code>tests/securite/**</code>, <code>vercel.json</code>, <code>package.json</code>, <code>package-lock.json</code>, <code>.gitignore</code>, <code>.github/**</code>, <code>docs/architecture.md</code>, <code>docs/specs/**</code>, <code>AGENTS.md</code>, <code>CLAUDE.md</code>. Fusionnés après relecture sans validation humaine (restrictions du projet), avec une relecture de sécurité en plus. <code>public/**</code> n'est pas sensible : le test de fuite garde ce que les pages reçoivent.</li>
+    <li><strong>Données</strong> : rien de réel nulle part ; ni <code>.env</code>, ni base de production, ni <code>ADMIN_PASSWORD</code> pour les agents.</li>
+    <li><strong>Captures</strong> : à 360 et 1280 pixels, dans les états de la spec, par les tests de la tâche, comparées à la maquette.</li>
+    <li><strong>Fichiers partagés</strong> : l'architecture ne change que pour corriger un écart ; pas d'entrée de CHANGELOG dans une tâche.</li>
+  </ul>
+</section>
+
+<section>
+  <h2>Décisions</h2>
+  <h3>Validées par Yannick le 22 novembre 2026</h3>
+  <ul>
+    <li><strong>V1</strong> Vercel, une seule adresse racine.</li>
+    <li><strong>V2</strong> Redis Upstash par la Vercel Marketplace ; une seule base pour le tirage, les empreintes et les essais.</li>
+    <li><strong>V3</strong> Empreinte scrypt salée, sur le mot de passe normalisé ; jamais en clair.</li>
+    <li><strong>V4</strong> Mot de passe d'administration en variable Vercel posée par Yannick ; aucun agent ne le connaît.</li>
+    <li><strong>V5</strong> Le plus simple : pas de comptes, pas de session durable.</li>
+    <li><strong>V6</strong> Restrictions : spec, architecture et découpage validés par Yannick ; fusion après relecture, chemins sensibles compris ; mise en production à la fusion ; réel, production et <code>.env</code> interdits aux agents.</li>
+  </ul>
+  <h3>Proposées par l'architecte</h3>
+  <div class="table"><table>
+    <tr><th>N°</th><th>Question</th><th>Recommandation</th><th>Écarté</th></tr>
+    <tr><td>A1</td><td>Cadre</td><td>Pages statiques et fonctions Vercel, sans framework</td><td>Next.js, Vite</td></tr>
+    <tr><td>A2</td><td>Langage et contrôles</td><td>JavaScript vérifié par <code>tsc</code>, Biome, <code>node:test</code></td><td>TypeScript compilé, ESLint, Vitest</td></tr>
+    <tr><td>A3</td><td>Client Redis</td><td><code>@upstash/redis</code></td><td>Client maison, <code>redis</code> en TCP</td></tr>
+    <tr><td>A4</td><td>Un seul tirage</td><td><code>SET draw … NX</code></td><td>Transaction, verrou</td></tr>
+    <tr><td>A5</td><td>Essais ratés</td><td>Compteur et clé de blocage de 60 secondes</td><td>Une seule clé, <code>@upstash/ratelimit</code></td></tr>
+    <tr><td>A6</td><td>Page réservée sans session</td><td>Mot de passe envoyé à chaque appel, gardé par la page</td><td>Jeton signé, cookie</td></tr>
+    <tr><td>A7</td><td>Adresse de la page réservée</td><td><code>/reservee</code></td><td>Adresse difficile à deviner</td></tr>
+    <tr><td>A8</td><td>Tester sans la production</td><td>Double en mémoire, plus une base de test sur les revues</td><td>Double seul, base de test seule</td></tr>
+    <tr><td>A9</td><td>Intégration continue</td><td>GitHub Actions</td><td>Contrôles en local seulement</td></tr>
+    <tr><td>A10</td><td>JavaScript et navigateurs</td><td>JavaScript exigé, modules ES (téléphones depuis 2019 environ) ; question : un participant a-t-il un téléphone de plus de six ans ?</td><td>Version sans JavaScript</td></tr>
+    <tr><td>A11</td><td>Polices</td><td>Google Fonts</td><td>Polices servies par le site</td></tr>
+  </table></div>
+  <h3>Points que la spec ne tranche pas</h3>
+  <div class="table"><table>
+    <tr><th>N°</th><th>Point</th><th>Décision</th></tr>
+    <tr><td>T1</td><td>Mot de passe choisi deux fois pour la même personne, ou réponse perdue</td><td>Le premier est gardé ; le même ouvre le paquet ; un autre compte comme raté et passe à « Redonner »</td></tr>
+    <tr><td>T2</td><td>Effacé pendant que la personne est sur « Redonner »</td><td>« Voir mon tirage » passe à « Choisir »</td></tr>
+    <tr><td>T3</td><td>Compter les 4 caractères</td><td>En points de code, sans espaces au bout, en NFC</td></tr>
+    <tr><td>T4</td><td>Mot de passe d'administration normalisé ?</td><td>Non ; champ masqué, comme la maquette</td></tr>
+    <tr><td>T5</td><td>Quand « Beaucoup d'essais ratés… »</td><td>Dès le cinquième raté, puis à chaque essai pendant la minute, même le bon</td></tr>
+    <tr><td>T6</td><td>Longueur maximale</td><td>Aucune règle visible ; plus de 2 Ko refusé, bandeau « Oups… »</td></tr>
+  </table></div>
+</section>
+
+<section>
+  <h2>Hypothèses et ce qui n'est pas conçu</h2>
+  <ul>
+    <li>L'horloge de l'appareil donne le jour du compte à rebours.</li>
+    <li>Une seule base, sans sauvegarde : perdue, le tirage le serait aussi. Ce qu'Upstash fait d'une base gratuite peu utilisée n'est pas vérifié.</li>
+    <li>Pas de journal des actions ; les journaux de Vercel ne reçoivent ni mot de passe, ni empreinte, ni tirage.</li>
+    <li>Pas de domaine propre : l'adresse que Vercel donne.</li>
+    <li>Non conçu, hors périmètre : ajout ou retrait d'un participant, second tirage, autre année.</li>
+  </ul>
+</section>
+</main>
+</body>
+</html>
