@@ -112,14 +112,74 @@ test("admin has its own counter", async () => {
   assert.equal(await attempt(store, "admin", right), "locked");
 });
 
-test("an error thrown by the check passes through and is not counted", async () => {
+test("an error thrown by the check passes through, the attempt counted", async () => {
+  const { store } = setup();
+  await fail(store, "lea", 3);
+  const broken = () => {
+    throw new Error("broken check");
+  };
+  await assert.rejects(attempt(store, "lea", broken), /broken check/);
+  assert.equal(await store.get("fails:lea"), "4");
+});
+
+test("100 attempts at the same time get at most 5 checks", async () => {
+  const { store } = setup();
+  let checked = 0;
+  const slowWrong = async () => {
+    checked++;
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    return false;
+  };
+  const answers = await Promise.all(
+    Array.from({ length: 100 }, () => attempt(store, "lea", slowWrong)),
+  );
+  assert.equal(checked, 5);
+  assert.equal(answers.filter((answer) => answer === "wrong_password").length, 4);
+  assert.equal(await store.get("lock:lea"), "1");
+  assert.equal(await attempt(store, "lea", right), "locked");
+});
+
+test("attempts sent one after the other during slow checks get at most 5 checks", async () => {
+  const { store } = setup();
+  let checked = 0;
+  const slowWrong = async () => {
+    checked++;
+    await new Promise((resolve) => setTimeout(resolve, 30));
+    return false;
+  };
+  const pending = [];
+  for (let i = 0; i < 50; i++) {
+    pending.push(attempt(store, "lea", slowWrong));
+    await new Promise((resolve) => setTimeout(resolve, 1));
+  }
+  await Promise.all(pending);
+  assert.equal(checked, 5);
+});
+
+test("a right password on the fifth attempt opens and removes the lock", async () => {
   const { store } = setup();
   await fail(store, "lea", 4);
-  const broken = () => {
-    throw new Error("no_password");
-  };
-  await assert.rejects(attempt(store, "lea", broken), /no_password/);
-  assert.equal(await store.get("fails:lea"), "4");
+  assert.equal(await attempt(store, "lea", right), "ok");
+  assert.equal(await store.get("lock:lea"), null);
+  assert.equal(await store.get("fails:lea"), null);
+});
+
+test("a count left past the fifth without a lock locks one minute, not forever", async () => {
+  const { clock, store } = setup();
+  for (let i = 0; i < 5; i++) await store.incr("fails:lea");
+  assert.equal(await attempt(store, "lea", right), "locked");
+  clock.now += 60_000;
+  assert.equal(await attempt(store, "lea", right), "ok");
+});
+
+test("a stop after the lock of the fifth attempt locks two minutes at most", async () => {
+  const { clock, store } = setup();
+  for (let i = 0; i < 5; i++) await store.incr("fails:lea");
+  await store.setWithExpiry("lock:lea", "1", 60);
+  clock.now += 60_000;
+  assert.equal(await attempt(store, "lea", right), "locked");
+  clock.now += 60_000;
+  assert.equal(await attempt(store, "lea", right), "ok");
 });
 
 test("the check may be asynchronous", async () => {
@@ -130,7 +190,7 @@ test("the check may be asynchronous", async () => {
 
 test("only fails:<id> and lock:<id> are written, by the commands of the architecture", async () => {
   const { clock, store, writes } = setup();
-  await fail(store, "lea", 3);
+  await fail(store, "lea", 4);
   await attempt(store, "lea", right);
   await fail(store, "admin", 6);
   clock.now += 60_000;
@@ -138,7 +198,7 @@ test("only fails:<id> and lock:<id> are written, by the commands of the architec
   for (const [operation, key, ...rest] of writes) {
     const allowed =
       (operation === "incr" && /^fails:(lea|admin)$/.test(String(key))) ||
-      (operation === "del" && /^fails:(lea|admin)$/.test(String(key))) ||
+      (operation === "del" && /^(fails|lock):(lea|admin)$/.test(String(key))) ||
       (operation === "setWithExpiry" &&
         /^lock:(lea|admin)$/.test(String(key)) &&
         rest[0] === "1" &&

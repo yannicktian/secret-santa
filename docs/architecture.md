@@ -117,14 +117,23 @@ cours.
 
 ### Redonner son mot de passe (S3)
 
-1. Le participant est bloqué (`lock:<id>` existe) : 429 `locked`, sans vérifier le mot de
+1. Il n'a pas de mot de passe (effacé entre-temps par Yannick) : 409 `no_password`, sans
+   compter d'essai, et l'écran passe à « Choisir son mot de passe ». L'effacement retire
+   aussi le blocage : un participant sans mot de passe n'est jamais bloqué.
+2. Le participant est bloqué (`lock:<id>` existe) : 429 `locked`, sans vérifier le mot de
    passe, même juste.
-2. Il n'a pas de mot de passe (effacé entre-temps par Yannick) : 409 `no_password`, et
-   l'écran passe à « Choisir son mot de passe ».
-3. Le mot de passe est juste : le compteur d'essais est remis à zéro, 200 `{ receiver }`.
-4. Il est faux : l'essai est compté ; au cinquième de suite, le participant est bloqué une
-   minute et la réponse est 429 `locked` (c'est le cinquième essai qui affiche « Beaucoup
-   d'essais ratés… », comme dans la maquette) ; sinon 401 `wrong_password`.
+3. L'essai est compté avant la vérification, par un `INCR fails:<id>` atomique : des essais
+   envoyés en même temps ne donnent jamais plus de 5 vérifications. Au-delà du cinquième :
+   429 `locked`, sans vérifier. Le cinquième écrit le blocage avant sa vérification, pour
+   que les essais suivants le voient pendant qu'elle dure.
+4. Le mot de passe est juste : le compteur d'essais est remis à zéro (et le blocage du
+   cinquième retiré), 200 `{ receiver }`.
+5. Il est faux : au cinquième de suite, le compteur est remis à zéro, le participant reste
+   bloqué une minute et la réponse est 429 `locked` (c'est le cinquième essai qui affiche
+   « Beaucoup d'essais ratés… », comme dans la maquette) ; sinon 401 `wrong_password`.
+
+Un compte au-delà du cinquième sans blocage, laissé par une fonction arrêtée entre deux
+commandes, bloque une minute et repart de zéro : personne n'est bloqué pour toujours.
 
 ### La page réservée (S6)
 
@@ -144,8 +153,8 @@ le client est créé avec `automaticDeserialization: false`, pour que rien ne so
 |---|---|---|---|
 | `draw` | Le tirage, JSON des identifiants : `{"yannick":"christine","lea":"mamet",…}` | Sans fin | `SET draw … NX`, une seule fois |
 | `password:<id>` | L'empreinte : `scrypt$16384$8$1$<sel en base64>$<empreinte en base64>` | Sans fin | `SET … NX` au choix ; `DEL` à l'effacement |
-| `fails:<id>` | Le nombre d'essais ratés de suite (`<id>` d'un participant, ou `admin`) | Sans fin | `INCR` à un essai raté ; `DEL` à un bon essai, au blocage ou à l'effacement |
-| `lock:<id>` | `1` | 60 secondes | `SET … EX 60` au cinquième essai raté ; `DEL` à l'effacement |
+| `fails:<id>` | Le nombre d'essais de suite depuis le dernier bon (`<id>` d'un participant, ou `admin`) | Sans fin | `INCR` à chaque essai, avant la vérification ; `DEL` à un bon essai, au blocage ou à l'effacement |
+| `lock:<id>` | `1` | 60 secondes | `SET … EX 60` au cinquième essai, avant sa vérification, ou sur un compte au-delà du cinquième sans blocage ; `DEL` si ce cinquième essai est juste, et à l'effacement |
 
 Seule la production a une base : `secret-santa-kv`, reliée au seul environnement
 Production. Les déploiements de revue (Preview) n'en ont pas (décision V7).
@@ -303,7 +312,7 @@ d'une base gratuite peu utilisée.
 |---|---|---|
 | Le tirage est uniforme (S7) | `tests/unit/draw.test.js` | 185 400 tirages simulés avec un générateur à graine fixe (100 attendus par tirage possible) : les 1 854 tirages possibles sortent tous, aucun point fixe, et le khi-deux à 1 853 degrés de liberté reste sous 2 142 (probabilité d'un faux échec d'environ trois sur un million). Le même test échoue sur un algorithme biaisé (Sattolo, qui ne fait que des cycles). 1859,8 obtenu sur un prototype, en 0,7 seconde |
 | Un seul tirage (S7) | `tests/unit/gift.test.js` | Deux choix simultanés de deux participants, sur un double dont `get` rend la main avant `setIfAbsent` : un seul `draw` écrit, et les deux reçoivent un prénom de ce tirage |
-| Les essais ratés (S3, S6) | `tests/unit/attempts.test.js` | Horloge avancée : 4 ratés puis 1 bon, compte à zéro ; 5 ratés, blocage, bon mot de passe refusé, débloqué après 60 secondes |
+| Les essais ratés (S3, S6) | `tests/unit/attempts.test.js` | Horloge avancée : 4 ratés puis 1 bon, compte à zéro ; 5 ratés, blocage, bon mot de passe refusé, débloqué après 60 secondes ; 100 essais simultanés, et 50 envoyés à la suite pendant des vérifications lentes : 5 vérifications au plus ; un compte laissé sans blocage ne bloque qu'une minute |
 | Rien de secret n'est envoyé (sûreté) | `tests/securite/fuite.test.js` | Un parcours complet sur le double en mémoire, avec un tirage fictif et des mots de passe témoins ; chaque réponse (pages, scripts, JSON) est cherchée : ni empreinte, ni sel, ni mot de passe, ni `ADMIN_PASSWORD`, ni le tirage d'un autre, ni le tirage entier ; `public/` ne cite aucun nom de variable d'environnement |
 | Les écrans | `tests/e2e/*.spec.js` | Les mots exacts, les états, les tailles (48 et 56 pixels, texte de 20 pixels), 360 pixels sans défilement horizontal, appels interceptés par `page.route` selon le tableau des fonctions ; le parcours complet sans interception |
 
@@ -359,7 +368,7 @@ sont fictifs.
 | A2 | Quel langage et quels contrôles ? | JavaScript vérifié par `tsc` (JSDoc) · TypeScript compilé · JavaScript sans vérification ; Biome · ESLint ; `node:test` · Vitest | **JavaScript vérifié par `tsc`, Biome, `node:test`** : le navigateur lit les fichiers sans build, les types sont vérifiés quand même, Biome remplace ESLint en un paquet, `node:test` est fourni par Node |
 | A3 | Quel client Redis ? | `@upstash/redis` (REST) · appels `fetch` écrits à la main · `redis` en TCP | **`@upstash/redis`** : fait pour les fonctions sans serveur, lit les variables de l'intégration, deux paquets en tout ; un client maison serait du code à tester, et le TCP ouvrirait une connexion par appel |
 | A4 | Comment faire le tirage une seule fois ? | `SET draw … NX` · transaction `WATCH`/`MULTI` · verrou puis écriture | **`SET … NX`** : une seule commande atomique, rien à débloquer si une fonction s'arrête au milieu |
-| A5 | Comment compter les essais ratés ? | Compteur et clé de blocage de 60 secondes · une seule clé dont la durée démarre au cinquième essai · `@upstash/ratelimit` | **Compteur et clé de blocage** : chaque écriture est atomique ; une fonction arrêtée entre deux commandes ne bloque jamais un participant pour toujours (au pire, le blocage suivant vient un essai plus tôt). Une seule clé pourrait rester bloquée sans durée ; `@upstash/ratelimit` compte des essais par fenêtre, pas « 5 de suite, remis à zéro par un bon » |
+| A5 | Comment compter les essais ratés ? | Compteur et clé de blocage de 60 secondes · une seule clé dont la durée démarre au cinquième essai · `@upstash/ratelimit` | **Compteur et clé de blocage** : chaque écriture est atomique ; une fonction arrêtée entre deux commandes ne bloque jamais un participant pour toujours (au pire, une minute de blocage de plus). Une seule clé pourrait rester bloquée sans durée ; `@upstash/ratelimit` compte des essais par fenêtre, pas « 5 de suite, remis à zéro par un bon » |
 | A6 | Comment protéger la page réservée sans session ? | Le mot de passe d'administration envoyé à chaque appel, gardé en mémoire par la page · un jeton signé de courte durée · un cookie de session | **À chaque appel** : aucun jeton ni secret de signature à gérer ; rien ne survit à la page (S5) ; chaque appel passe par la règle des 5 essais |
 | A7 | Adresse de la page réservée | `/reservee` · une adresse longue et difficile à deviner | **`/reservee`** : le mot de passe protège la page, pas l'adresse ; Yannick la retient |
 | A9 | Intégration continue ? | GitHub Actions · aucune (contrôles en local) | **GitHub Actions** : les agents fusionnent sans humain ; l'intégration continue est la preuve que l'orchestrateur attend avant chaque fusion. Repo privé : les minutes gratuites de GitHub suffisent (non vérifié) |

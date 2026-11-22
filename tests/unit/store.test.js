@@ -116,6 +116,10 @@ for (const [name, make] of stores) {
       ]);
     });
 
+    test("mget of no key gives an empty list", async () => {
+      assert.deepEqual(await make().mget([]), []);
+    });
+
     test("incr counts from 1 and keeps the count as a string", async () => {
       const store = make();
       assert.equal(await store.incr("fails:lea"), 1);
@@ -164,6 +168,11 @@ describe("Redis store commands", () => {
       assert.equal(request.url, FAKE_URL);
       assert.equal(request.authorization, `Bearer ${FAKE_TOKEN}`);
     }
+  });
+
+  test("mget of no key sends nothing, since Redis refuses it", async () => {
+    await redisStore().mget([]);
+    assert.equal(redis.requests.length, 0);
   });
 
   test("a value that looks like JSON comes back as the same string", async () => {
