@@ -145,7 +145,7 @@ const PLAYERS=["Yannick","Léa","Christine","Guigui","Mamet","Anne","Loulou"];
 const COLORS=["#c8283c","#1f7a4d","#2d5fd3","#9a4dd0","#d9731a","#0f8a8a","#b8407a"];
 const FAKE_DRAW={Yannick:"Christine",Léa:"Mamet",Christine:"Loulou",Guigui:"Anne",Mamet:"Guigui",Anne:"Yannick",Loulou:"Léa"};
 let S;
-function fresh(){return{screen:"home",who:null,pw:{Yannick:"sapin",Léa:"sapin"},fails:{},lockUntil:{},msg:null,opened:false,admin:false,adminFails:0,adminMsg:null,confirm:null,typed:""};}
+function fresh(){return{screen:"home",draw:FAKE_DRAW,who:null,pw:{Yannick:"sapin",Léa:"sapin"},fails:{},lockUntil:{},msg:null,opened:false,admin:false,adminFails:0,adminMsg:null,confirm:null,typed:""};}
 S=fresh();
 const $=s=>document.querySelector(s);
 const scr=$("#screen");
@@ -229,7 +229,7 @@ function gift(){
     <div class="giftbtn open" style="width:150px;cursor:default">${svg}</div>
     <div class="shadow" style="width:100%"><div class="panel reveal">
       <p class="to">Tu offres ton cadeau à</p>
-      <p class="name">${esc(FAKE_DRAW[S.who])}</p>
+      <p class="name">${esc(S.draw[S.who])}</p>
       <p>Garde le secret jusqu'au 25 décembre !</p>
     </div></div>
     <button class="btn plain" type="button" data-act="home">Retour à l'accueil</button></div>`;
@@ -294,7 +294,7 @@ function action(a,p){
     askerase:()=>{S.confirm={erase:p};S.adminMsg=null;render();},
     doerase:()=>{delete S.pw[p];S.confirm=null;S.adminMsg=`Mot de passe de ${p} effacé.`;render();},
     askredraw:()=>{S.confirm="redraw";S.adminMsg=null;render();},
-    doredraw:()=>{S.pw={};S.fails={};S.lockUntil={};S.confirm=null;S.adminMsg="Tirage refait. Chacun choisira un nouveau mot de passe.";render();},
+    doredraw:()=>{S.pw={};S.draw=Object.fromEntries(PLAYERS.map(p=>[p,S.draw[S.draw[p]]]));S.fails={};S.lockUntil={};S.confirm=null;S.adminMsg="Tirage refait. Chacun choisira un nouveau mot de passe.";render();},
     cancel:()=>{S.confirm=null;render();}
   }[a];
   if(!run)return;

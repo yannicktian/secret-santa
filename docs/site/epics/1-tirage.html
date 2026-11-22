@@ -42,7 +42,7 @@
     <div class="flow"><span class="step">Mot de passe d'administration</span><span class="arrow">→</span><span class="step">Qui a choisi son mot de passe</span><span class="arrow">→</span><span class="step">Effacer un mot de passe oublié</span><span class="arrow">·</span><span class="step">Refaire le tirage</span></div>
   </div>
   <p>Sept participants, dans cet ordre partout : Yannick, Léa, Christine, Guigui, Mamet, Anne, Loulou. Une seule adresse, la racine du site. Les participants l'ouvrent sur leur téléphone : le site est conçu pour lui d'abord. Le site ne se souvient de personne d'une visite à l'autre.</p>
-  <p><strong>Hors périmètre</strong> : budget, idées de cadeaux ou liste de souhaits, messages ou rappels envoyés, ajout ou retrait d'un participant, second tirage, autre année.</p>
+  <p><strong>Hors périmètre</strong> : budget, idées de cadeaux ou liste de souhaits, messages ou rappels envoyés, ajout ou retrait d'un participant, autre année.</p>
 </section>
 
 <section>
@@ -74,7 +74,7 @@
     <ul>
       <li>Paquet fermé, « Ton tirage est dans ce paquet. » et « Touche le paquet pour l'ouvrir. » ; le paquet entier est cliquable.</li>
       <li>Ouvert : « Tu offres ton cadeau à », le prénom en grand, « Garde le secret jusqu'au 25 décembre ! » et « Retour à l'accueil ».</li>
-      <li>Le paquet s'ouvre à chaque visite et montre toujours le même prénom ; sans animation si l'appareil en demande moins.</li>
+      <li>Le paquet s'ouvre à chaque visite et montre toujours le même prénom, tant que Yannick ne refait pas le tirage (S8) ; sans animation si l'appareil en demande moins.</li>
       <li>Aucun écran ne dit qui offre son cadeau à la personne.</li>
     </ul></details>
   <details open><summary>S5 — Rien n'est retenu sur l'appareil</summary>
@@ -87,11 +87,11 @@
       <li>La page réservée a sa propre adresse, pour titre « Page réservée », et demande le « Mot de passe d'administration », distinct de celui de Yannick participant, avec « Entrer ». Mauvais mot de passe : « Ce n'est pas le bon mot de passe. » ; même règle et même message des 5 essais.</li>
       <li>Sous « Participants », les participants dans l'ordre, chacun « Mot de passe choisi » ou « Pas encore de mot de passe ».</li>
       <li>« Effacer le mot de passe » demande « Effacer le mot de passe de &lt;prénom&gt; ? », explique « &lt;prénom&gt; en choisira un nouveau à sa prochaine visite. Son tirage ne change pas. », puis « Effacer » ou « Annuler ».</li>
-      <li>Effacé : « Mot de passe de &lt;prénom&gt; effacé. » La personne repasse par S2 et retrouve le même prénom dans le paquet.</li>
+      <li>Effacé : « Mot de passe de &lt;prénom&gt; effacé. » La personne repasse par S2 et retrouve le même prénom dans le paquet, sauf si le tirage a été refait entre-temps (S8).</li>
       <li>Jamais un tirage ni un mot de passe, pas même ceux de Yannick : « Les tirages ne s'affichent jamais ici, pas même le tien. »</li>
     </ul></details>
   <details open><summary>S7 — Le tirage</summary>
-    <p>Le site fait le tirage tout seul, une seule fois, sans que personne n'ait rien à faire ni à voir.</p>
+    <p>Le site fait le tirage tout seul, sans que personne n'ait rien à faire ni à voir ; seul Yannick peut le refaire (S8).</p>
     <ul>
       <li>Fait à la première validation d'un mot de passe, avant que le paquet s'ouvre ; aucun écran ne dit qu'il n'est pas encore fait.</li>
       <li>Une seule fois, même si deux personnes valident au même moment ; il ne change plus, ni après un effacement de mot de passe, ni au redémarrage du site, sauf quand Yannick le refait (S8).</li>
@@ -102,10 +102,10 @@
   <details open><summary>S8 — Refaire le tirage</summary>
     <p>Yannick refait le tirage depuis la page réservée. Tous les mots de passe sont effacés : chacun repasse par sa première visite et découvre le nouveau tirage.</p>
     <ul>
-      <li>Sous la liste des participants, le bouton « Refaire le tirage », toujours présent.</li>
+      <li>Sous la liste des participants, le bouton « Refaire le tirage », toujours présent, que le tirage soit fait ou non.</li>
       <li>Confirmation « Refaire le tirage ? » avec « Tous les mots de passe seront effacés : chacun en choisira un nouveau et découvrira un nouveau tirage. », puis, s'il y a lieu, « 1 personne a déjà vu son tirage. » ou « &lt;n&gt; personnes ont déjà vu leur tirage. », et « Refaire le tirage » ou « Annuler ».</li>
       <li>Fait : le tirage et tous les mots de passe effacés, avec les essais ratés ; tous « Pas encore de mot de passe » ; « Tirage refait. Chacun choisira un nouveau mot de passe. »</li>
-      <li>Le nouveau tirage est fait comme le premier, à la prochaine validation d'un mot de passe ; tout participant qui a un mot de passe voit un prénom du tirage en cours.</li>
+      <li>Le nouveau tirage est fait comme le premier, à la prochaine validation d'un mot de passe ; si quelqu'un choisit ou redonne son mot de passe pendant le refait, soit son mot de passe est effacé, soit il voit un prénom du nouveau tirage.</li>
       <li>La page réservée ne montre toujours aucun tirage.</li>
     </ul></details>
 </section>
@@ -126,7 +126,7 @@
 
 <section>
   <h2>Mots exacts</h2>
-  <p><code>&lt;prénom&gt;</code> : le prénom du participant ; <code>&lt;n&gt;</code> : un nombre de jours.</p>
+  <p><code>&lt;prénom&gt;</code> : le prénom du participant ; <code>&lt;n&gt;</code> : un nombre, de jours sur l'accueil, de participants sur la page réservée.</p>
   <h3>Accueil</h3>
   <div class="table"><table>
     <tr><th>Élément</th><th>Texte</th></tr>
@@ -203,6 +203,7 @@
     <li><strong>Mauvais prénom touché à la première visite</strong>, et mot de passe choisi à la place d'un autre : la vraie personne tombe sur « Redonner son mot de passe » ; le texte « Mot de passe oublié ? » l'envoie vers Yannick, qui l'efface. Celui qui s'est trompé a vu le tirage d'un autre : le site le limite par « Bonjour &lt;prénom&gt; ! » et « Ce n'est pas moi » avant tout enregistrement.</li>
     <li><strong>Mot de passe oublié</strong> : S3 puis S6.</li>
     <li><strong>Yannick oublie le sien</strong> : il l'efface depuis la page réservée.</li>
+    <li><strong>Tirage refait pendant une visite</strong> : « Voir mon tirage » fait passer à « Choisir son mot de passe » ; un paquet déjà ouvert reste affiché jusqu'au retour à l'accueil.</li>
     <li><strong>Site injoignable</strong> : l'écran reste, avec « Oups, le site ne répond pas… » et « Réessayer », qui refait la dernière action ; ce qui était tapé reste.</li>
     <li><strong>Après le 25 décembre</strong> : le site marche toujours, sans date ni compte à rebours.</li>
   </ul>
@@ -227,7 +228,7 @@
     <tr><td>D12</td><td>Maquette</td><td>Les vrais prénoms, un tirage fictif marqué comme tel</td><td>On juge l'écran avec ses vrais boutons</td><td>Des prénoms inventés</td></tr>
     <tr><td>D13</td><td>Appareil visé</td><td>Mobile first : chaque écran conçu pour un téléphone en portrait</td><td>Demande de Yannick : les participants seront sur leur téléphone</td><td>Un affichage propre à l'ordinateur</td></tr>
     <tr><td>D14</td><td>Mot de passe oublié</td><td>Le dire sous « Voir mon tirage », dès l'arrivée ; l'erreur dit seulement de réessayer</td><td>Demande de Yannick : savoir quoi faire sans devoir se tromper d'abord</td><td>Ne le dire qu'après une erreur</td></tr>
-    <tr><td>D15</td><td>Refaire le tirage</td><td>Un bouton de la page réservée, toujours présent ; il efface le tirage et tous les mots de passe</td><td>Demande de Yannick : pouvoir le refaire lui-même ; tout effacer évite qu'on garde un prénom qui n'est plus le sien</td><td>Seulement tant que personne d'autre n'a de mot de passe ; garder les mots de passe</td></tr>
+    <tr><td>D15</td><td>Refaire le tirage</td><td>Un bouton de la page réservée, toujours présent ; il efface le tirage et tous les mots de passe ; revient sur « pouvoir le refaire », écarté en D7</td><td>Demande de Yannick : pouvoir le refaire lui-même ; tout effacer évite qu'on garde un prénom qui n'est plus le sien</td><td>Seulement tant que personne d'autre n'a de mot de passe ; garder les mots de passe</td></tr>
   </table></div>
 </section>
 

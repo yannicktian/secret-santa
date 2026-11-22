@@ -33,8 +33,7 @@ l'ouvrent sur leur téléphone : le site est conçu pour lui d'abord (voir
 réservée de Yannick.
 
 Hors périmètre : un budget, des idées de cadeaux ou une liste de souhaits, des messages ou
-des rappels envoyés aux participants, l'ajout ou le retrait d'un participant, un second
-tirage, une autre année.
+des rappels envoyés aux participants, l'ajout ou le retrait d'un participant, une autre année.
 
 ## Stories
 
@@ -108,8 +107,7 @@ Critères :
   pour l'ouvrir. ». Le paquet entier est cliquable.
 - Le paquet ouvert montre « Tu offres ton cadeau à », le prénom tiré, en grand,
   « Garde le secret jusqu'au 25 décembre ! » et le bouton « Retour à l'accueil ».
-- Le paquet s'ouvre à chaque visite, la première comme les suivantes, et montre toujours
-  le même prénom.
+- Le paquet s'ouvre à chaque visite, la première comme les suivantes, et montre toujours le même prénom, tant que Yannick ne refait pas le tirage (S8).
 - Quand l'appareil demande moins d'animations, le paquet s'ouvre sans animation.
 - Ni cet écran ni aucun autre ne dit qui offre son cadeau à la personne.
 
@@ -146,15 +144,14 @@ Critères :
   les boutons « Effacer » et « Annuler ».
 - « Effacer » efface le mot de passe, passe l'état à « Pas encore de mot de passe » et
   affiche « Mot de passe de <prénom> effacé. ». À sa visite suivante, la personne passe par
-  S2 et voit le même prénom dans le paquet.
+  S2 et voit le même prénom dans le paquet, sauf si Yannick a refait le tirage entre-temps (S8).
 - La page réservée ne montre jamais un tirage ni un mot de passe, pas même ceux de
   Yannick, et la phrase « Les tirages ne s'affichent jamais ici, pas même le tien. » le
   rappelle.
 
 ### S7 — Le tirage
 
-Le site fait le tirage tout seul, une seule fois, sans que personne n'ait rien à faire ni à
-voir.
+Le site fait le tirage tout seul, sans que personne n'ait rien à faire ni à voir ; seul Yannick peut le refaire (S8).
 
 Critères :
 
@@ -189,8 +186,7 @@ Critères :
   affiche « Tirage refait. Chacun choisira un nouveau mot de passe. ».
 - Le nouveau tirage est fait comme le premier (S7), à la prochaine validation d'un mot de
   passe ; il suit les mêmes règles et le même hasard.
-- Après « Refaire le tirage », tout participant qui a un mot de passe voit un prénom du
-  tirage en cours, même si quelqu'un choisissait son mot de passe au même moment.
+- Si quelqu'un choisit ou redonne son mot de passe pendant que le tirage est refait, soit son mot de passe est effacé, soit le prénom qu'il voit est celui du nouveau tirage : personne ne garde un mot de passe avec le prénom d'un ancien tirage.
 - La page réservée ne montre toujours aucun tirage, ni l'ancien ni le nouveau.
 
 ## Affichage
@@ -217,8 +213,7 @@ Critères :
 
 ## Mots exacts
 
-Les textes entre chevrons sont remplacés : `<prénom>` par le prénom du participant, `<n>`
-par un nombre de jours.
+Les textes entre chevrons sont remplacés : `<prénom>` par le prénom du participant, `<n>` par un nombre : de jours sur l'accueil, de participants sur la page réservée.
 
 ### Accueil (S1)
 
@@ -305,6 +300,9 @@ par un nombre de jours.
 - **Mot de passe oublié** : S3 puis S6.
 - **Yannick oublie son propre mot de passe de participant** : il l'efface depuis la page
   réservée, comme pour les autres.
+- **Tirage refait pendant une visite** : sur « Redonner son mot de passe », « Voir mon tirage »
+  fait passer à « Choisir son mot de passe » (S2) ; un paquet déjà ouvert reste affiché
+  jusqu'au retour à l'accueil.
 - **Site injoignable ou réponse en échec** : l'écran en cours reste affiché avec « Oups, le
   site ne répond pas… » et « Réessayer », qui refait la dernière action ; rien n'est perdu
   de ce qui était tapé.
