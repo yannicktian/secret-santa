@@ -104,7 +104,9 @@ function showList(done) {
       element("span", participant.hasPassword ? "st on" : "st", state),
     );
     if (participant.hasPassword) {
-      row.append(button("btn danger", "Effacer le mot de passe", () => showEraseConfirm(participant)));
+      row.append(
+        button("btn danger", "Effacer le mot de passe", () => showEraseConfirm(participant)),
+      );
     }
     return row;
   });
