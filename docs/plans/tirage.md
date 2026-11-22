@@ -72,7 +72,7 @@ de passe d'administration, voir les sept participants « Pas encore de mot de pa
 
 ## 1. Socle, contrôles et santé du déploiement
 
-- **Fichiers** : `package.json` (`"type": "module"`, `engines.node` `24.x`, scripts
+- **Fichiers** : `package.json` (`"type": "module"`, `engines.node` `24.x`, que la tâche 16 (issue #32) passe à `26.x`, scripts
   `check`, `lint`, `typecheck`, `test`, `test:e2e`, `dev`, dépendances aux versions de
   l'[architecture](../architecture.md#contrôles)), `package-lock.json`, `tsconfig.json`,
   `biome.json`, `playwright.config.js` (serveur `scripts/dev-server.js` avec
