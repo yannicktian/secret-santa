@@ -3,8 +3,9 @@
 Le site du secret santa familial de Noël 2026 : chacun dit qui il est, choisit un mot de
 passe, et découvre à qui il offre son cadeau.
 
-Le lien à envoyer aux participants : <https://secret-santa-one-lemon.vercel.app>. La page
-réservée de Yannick est à `/reservee` sur la même adresse ; aucun lien du site n'y mène.
+Le lien à envoyer aux participants est l'adresse de production, que ce dépôt public ne
+donne pas : voir [Adresses](docs/deploiement.md#adresses). La page réservée de Yannick est à
+`/reservee` sur la même adresse ; aucun lien du site n'y mène.
 
 | Pour… | Lire |
 |---|---|

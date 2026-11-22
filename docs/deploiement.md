@@ -8,7 +8,7 @@ l'[architecture](architecture.md#hébergement-et-déploiement).
 
 | Déploiement | Adresse | Accès |
 |---|---|---|
-| Production, la branche `main` | <https://secret-santa-one-lemon.vercel.app> | Public : c'est le lien à envoyer aux participants |
+| Production, la branche `main` | L'alias `*.vercel.app` du projet (Vercel → projet `secret-santa` → Domains) ; pour les agents, `SECRET_SANTA_URL` dans `~/.config/secret-santa/site.env`, hors du dépôt | Public : c'est le lien à envoyer aux participants |
 | Revue, chaque branche poussée | `https://secret-santa-<id>-yannicktians-projects.vercel.app` | Protégé par l'authentification de Vercel : sans être connecté au compte, la page répond 302 |
 
 Les autres alias de la production (`secret-santa-yannicktians-projects.vercel.app`,
@@ -28,31 +28,37 @@ Ces commandes ne font que des lectures sans donnée. Ne jamais appeler `particip
 `choose-password`, `open-gift` ni `reserved` sur la production, ni rien y envoyer en
 `POST` : un mot de passe choisi par un agent ferait le vrai tirage.
 
+L'adresse se charge d'abord, depuis le fichier hors du dépôt :
+
+```sh
+set -a; . ~/.config/secret-santa/site.env; set +a
+```
+
 1. La santé du déploiement, qui ne lit pas la base : `store` doit valoir `redis`, et
    `reservedPage` `true` (`ADMIN_PASSWORD` est posée).
 
    ```sh
-   curl -s https://secret-santa-one-lemon.vercel.app/api/health
+   curl -s "$SECRET_SANTA_URL/api/health"
    ```
 
 2. Les en-têtes de `vercel.json` sur l'accueil (`content-security-policy`,
    `x-content-type-options`, `referrer-policy`, `x-robots-tag`, `cache-control: no-store`) :
 
    ```sh
-   curl -s -D - -o /dev/null https://secret-santa-one-lemon.vercel.app/
+   curl -s -D - -o /dev/null "$SECRET_SANTA_URL/"
    ```
 
 3. La page réservée est servie : la commande affiche `<title>Page réservée</title>`.
 
    ```sh
-   curl -s https://secret-santa-one-lemon.vercel.app/reservee | grep '<title>'
+   curl -s "$SECRET_SANTA_URL/reservee" | grep '<title>'
    ```
 
 4. Les sources ne sont pas servies : chacune de ces deux commandes affiche `404`.
 
    ```sh
-   curl -s -o /dev/null -w '%{http_code}\n' https://secret-santa-one-lemon.vercel.app/package.json
-   curl -s -o /dev/null -w '%{http_code}\n' https://secret-santa-one-lemon.vercel.app/lib/http.js
+   curl -s -o /dev/null -w '%{http_code}\n' "$SECRET_SANTA_URL/package.json"
+   curl -s -o /dev/null -w '%{http_code}\n' "$SECRET_SANTA_URL/lib/http.js"
    ```
 
 Essayé sur orca-server (bash) ; non essayé sur le Mac (zsh).
@@ -133,7 +139,7 @@ appel à une fonction qui lit ou écrit la base :
 
 | Point | Constaté |
 |---|---|
-| Déploiement | `target: production`, prêt, fonctions en `sfo1` ; seul alias public, `secret-santa-one-lemon.vercel.app` ; les deux autres alias répondent 302 |
+| Déploiement | `target: production`, prêt, fonctions en `sfo1` ; seul alias public, celui de `SECRET_SANTA_URL` ; les deux autres alias répondent 302 |
 | Pages | `GET /` sert « Secret santa de Noël » et `GET /reservee` « Page réservée », octet pour octet comme `public/` de `main`, ainsi que les scripts et `style.css` |
 | Signature Web des fonctions | `api/health.js`, qui n'exporte que `GET`, répond à `GET /api/health` ; `HEAD` y répond 405 |
 | Dossier servi | `outputDirectory` de `vercel.json` s'applique : `/package.json`, `/lib/http.js`, `/vercel.json`, `/README.md` et `/.env` répondent 404 |
