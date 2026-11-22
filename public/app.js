@@ -1,6 +1,6 @@
 // The screens of the participant: the home page (S1) and the passage from one screen to the
 // next, in one document and without history entry (S5). The state lives in variables only.
-import { call, clearBanner } from "./call.js";
+import { call, clearBanner, waiting } from "./call.js";
 import { countdown } from "./countdown.js";
 import { showGift } from "./screens/gift.js";
 import { showPassword } from "./screens/password.js";
@@ -45,9 +45,35 @@ function turn() {
   return () => current === shown;
 }
 
+/** The buttons of the first names, while the home page is shown. @type {HTMLElement[]} */
+let players = [];
+
+/** The button of the first name tapped last. @type {HTMLElement | null} */
+let tapped = null;
+
+/**
+ * Shows the buttons of the first names as the call allows: while its answer is awaited, the
+ * seven are disabled and the one tapped shows the indicator; with the banner, all are active.
+ */
+function sync() {
+  const busy = waiting();
+  for (const button of players) {
+    if (busy) button.setAttribute("aria-disabled", "true");
+    else button.removeAttribute("aria-disabled");
+    if (busy && button === tapped) button.setAttribute("aria-busy", "true");
+    else button.removeAttribute("aria-busy");
+  }
+}
+
+// The banner comes and goes as a direct child of the body: it shows a failure, and its
+// « Réessayer » makes the call again.
+new MutationObserver(sync).observe(document.body, { childList: true });
+
 /** Empties the screen, the banner and the scroll, before showing another screen. */
 function clear() {
   shown += 1;
+  players = [];
+  tapped = null;
   clearBanner();
   root.replaceChildren();
   window.scrollTo(0, 0);
@@ -55,10 +81,15 @@ function clear() {
 
 /**
  * @param {{ id: string, name: string }} participant
+ * @param {HTMLElement} button
  */
-async function choose(participant) {
+async function choose(participant, button) {
+  if (waiting()) return;
   const isCurrent = turn();
-  const { data } = await call("/api/participant", { participant: participant.id }, isCurrent);
+  tapped = button;
+  const answer = call("/api/participant", { participant: participant.id }, isCurrent);
+  sync();
+  const { data } = await answer;
   if (!isCurrent()) return;
   clear();
   showPassword(root, {
@@ -103,9 +134,10 @@ function home() {
     arrow.setAttribute("aria-hidden", "true");
     const button = element("button", "btn player", badge, participant.name, arrow);
     button.setAttribute("type", "button");
-    button.addEventListener("click", () => choose(participant));
+    button.addEventListener("click", () => choose(participant, button));
     return button;
   });
+  players = buttons;
   root.append(
     element("h1", "", "Secret santa de Noël"),
     element("div", "shadow", panel),

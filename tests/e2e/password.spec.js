@@ -258,6 +258,22 @@ test.describe("S2, first time", () => {
     await page.waitForTimeout(2000);
     await expect(page.getByRole("heading", { level: 2 })).toHaveText("Qui es-tu ?");
   });
+
+  test("a late failure of « Valider » does not show the banner on the home page", async ({
+    page,
+  }) => {
+    await openPassword(page, "Léa", { hasPassword: false });
+    await page.route("**/api/choose-password", async (route) => {
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+      return route.abort("internetdisconnected");
+    });
+    await page.getByLabel("Ton mot de passe").fill("Renne");
+    await page.getByRole("button", { name: "Valider" }).click();
+    await page.getByRole("button", { name: "Ce n'est pas moi" }).click();
+    await page.waitForTimeout(2000);
+    await expect(page.getByRole("heading", { level: 2 })).toHaveText("Qui es-tu ?");
+    await expect(page.getByRole("alert")).toHaveCount(0);
+  });
 });
 
 test.describe("S3, back again", () => {

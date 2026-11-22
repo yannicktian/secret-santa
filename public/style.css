@@ -566,3 +566,52 @@ input:focus-visible {
     font-size: 1.8rem;
   }
 }
+
+/* The buttons of the first names while the answer to a tap is awaited: the seven are
+   disabled, the one tapped shows three pixels instead of its arrow. */
+.player[aria-disabled="true"] {
+  cursor: default;
+}
+.player[aria-disabled="true"]:active {
+  transform: translateY(0);
+  box-shadow: 0 6px 0 var(--ink);
+}
+.player[aria-disabled="true"]:not([aria-busy="true"]) {
+  filter: grayscale(0.6) brightness(0.65);
+}
+.player[aria-busy="true"] .arrow {
+  position: relative;
+  width: 32px;
+  height: 8px;
+  font-size: 0;
+}
+.player[aria-busy="true"] .arrow::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 8px;
+  height: 8px;
+  background: var(--ink);
+  box-shadow:
+    12px 0 var(--ink),
+    24px 0 var(--ink);
+  animation: loading 0.9s steps(1) infinite;
+}
+@keyframes loading {
+  0% {
+    box-shadow:
+      12px 0 transparent,
+      24px 0 transparent;
+  }
+  33% {
+    box-shadow:
+      12px 0 var(--ink),
+      24px 0 transparent;
+  }
+  66% {
+    box-shadow:
+      12px 0 var(--ink),
+      24px 0 var(--ink);
+  }
+}
