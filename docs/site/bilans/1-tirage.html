@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="claude:viewport-fit-sides" content="cover">
+<title>Bilan de l'epic 1</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Pixelify+Sans:wght@500;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<nav><a href="../index.html">Accueil</a><a href="../epics/1-tirage.html">Epic 1 — Le tirage</a><a href="../architecture.html">Architecture</a></nav>
+<main>
+<header style="display:flex;flex-direction:column;gap:8px">
+  <span class="eyebrow">Epic <a href="https://github.com/yannicktian/secret-santa/issues/1">#1</a> · bilan</span>
+  <h1>Bilan de l'epic 1 — Le tirage</h1>
+  <p class="source">Le Markdown fait foi : <a href="https://github.com/yannicktian/secret-santa/blob/main/docs/bilans/1-tirage.md">docs/bilans/1-tirage.md</a>.</p>
+</header>
+<section>
+<p><a href="https://github.com/yannicktian/secret-santa/issues/1">Issue #1</a> · <a href="https://github.com/yannicktian/secret-santa/blob/main/docs/specs/tirage.md">spec</a> · <a href="https://github.com/yannicktian/secret-santa/blob/main/docs/plans/tirage.md">plan</a> · <a href="https://github.com/yannicktian/secret-santa/blob/main/docs/architecture.md">architecture</a> · détail (chaque validation, chronologie) : <a href="https://github.com/yannicktian/secret-santa/issues/1#issuecomment-7077611494">commentaire de l'issue</a>.</p>
+</section>
+<section>
+<h2>Ce qui t'attend</h2>
+<ol><li><strong>Si tu veux un autre tirage</strong> (tu as déjà vu le tien en essayant le site) : sur la page réservée, « Refaire le tirage », puis confirmer. La confirmation doit dire « 1 personne a déjà vu son tirage. » (toi) ; sinon, quelqu'un d'autre est déjà venu.</li><li><strong>Le constat de mise en ligne</strong>, étape par étape, dans l'<a href="https://github.com/yannicktian/secret-santa/issues/16">issue #16</a> : la page réservée, ton mot de passe de participant (il fait le vrai tirage si tu l'as refait), ton paquet, la page réservée à nouveau. Si tu as gardé ton tirage, Yannick y est déjà « Mot de passe choisi » et tu redonnes ton mot de passe (« Voir mon tirage ») : le tirage ne change pas. Dis-le dans l'issue #16 ; elle se ferme alors.</li><li><strong>Envoyer le lien</strong> de l'accueil, et lui seul, aux six autres participants.</li></ol>
+</section>
+<section>
+<h2>À confirmer</h2>
+<p>Réponds dans l'issue #1, d'un mot (« d'accord ») ou par ce que tu aurais changé.</p>
+<ul><li>Texte des boutons principaux en 20 px au lieu des 18,4 px de la maquette (<a href="https://github.com/yannicktian/secret-santa/pull/25">PR #25</a>). Recommandé : garder.</li><li>Tâche 5 acceptée à 828 lignes hors tests, au-delà de la limite de 400, le style de tous les écrans étant la copie de la maquette (<a href="https://github.com/yannicktian/secret-santa/pull/22">PR #22</a>). Recommandé : garder.</li><li>Deux tâches ajoutées après relecture, avant la mise en ligne, double appui (<a href="https://github.com/yannicktian/secret-santa/pull/28">#28</a>) et délai de 15 secondes des appels (<a href="https://github.com/yannicktian/secret-santa/pull/30">#30</a>), et la CI durcie après l'audit (<a href="https://github.com/yannicktian/secret-santa/pull/35">#35</a>). Recommandé : garder.</li><li>Le critère de S1 réécrit par l'indicateur de chargement puis par le toucher sans attente (<a href="https://github.com/yannicktian/secret-santa/pull/41">#41</a>, <a href="https://github.com/yannicktian/secret-santa/pull/42">#42</a>). Recommandé : garder.</li><li>L'accueil charge l'état des sept prénoms dès son ouverture ; un état périmé coûte au pire un essai raté, comme T1 (<a href="https://github.com/yannicktian/secret-santa/pull/42">PR #42</a>). Recommandé : garder.</li></ul>
+</section>
+<section>
+<h2>Livré</h2>
+<ul><li>Le site du secret santa, en production : accueil, mot de passe, paquet à ouvrir, page réservée, sur téléphone d'abord, dans le style de la maquette validée.</li><li>Tirage uniforme, fait au premier mot de passe choisi ; empreintes scrypt ; 5 essais.</li><li>Page réservée : qui a choisi son mot de passe, effacer un mot de passe, refaire le tirage.</li><li>Indicateur de chargement, puis toucher d'un prénom sans attente.</li></ul>
+</section>
+<section>
+<h2>Vérifier toi-même</h2>
+<ol><li>Ouvre l'accueil sur ton téléphone : il s'affiche aussitôt, et toucher un prénom ouvre l'écran du mot de passe sans attente.</li><li>Ouvre la page réservée : les sept participants et leur état, jamais un tirage.</li></ol>
+</section>
+<section>
+<h2>Points d'attention</h2>
+<ul><li><strong>Pas encore vu pour de vrai</strong> : le champ et le bouton au-dessus du clavier sur un vrai téléphone (essayé dans Chromium seulement). La base de production n'a été lue et écrite que par toi, en essayant le site ; aucun agent ne l'a lue ni écrite.</li><li><strong>Adresse de production</strong> : elle n'est plus dans le dépôt, devenu public ; les anciennes adresses, visibles dans l'historique, répondent 404.</li><li><strong>Limites acceptées</strong> : qui a le mot de passe d'administration peut voir un tirage en effaçant et en rechoisissant un mot de passe ; n'importe qui peut savoir qui a choisi le sien. Choisis un mot de passe d'administration long.</li><li><strong>Rares erreurs passagères</strong> : deux « Refaire le tirage » au même moment pendant un choix de mot de passe (« Réessayer » corrige) ; un essai raté pendant un tirage refait peut laisser une minute de blocage.</li><li><strong>Base</strong> : à San Francisco (<code>sfo1</code>, gardée sur ta réponse), sans région de lecture d'après Vercel (non vu dans la console Upstash) : la garantie du tirage en dépend.</li><li><strong>Node</strong> : 26 en CI et en production, 24 sur orca-server (avertissement attendu).</li></ul>
+</section>
+<section>
+<h2>Validations</h2>
+<div class="table"><table><tr><th>Étape</th><th>Validations</th><th>aucun</th><th>mineur</th><th>majeur</th><th>manquant</th><th>non mesuré</th><th>Sous-estimations</th><th>Surestimations</th></tr><tr><td>spec</td><td>2</td><td>2</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td></tr><tr><td>architecture et découpage</td><td>1</td><td>1</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td></tr><tr><td>évolution de factory</td><td>1</td><td>1</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td></tr></table></div>
+<p>Les fusions de tâches n'attendent pas l'humain (restrictions du projet) ; aucune n'a eu de troisième « à corriger ».</p>
+</section>
+<section>
+<h2>Sécurité</h2>
+<p>Deux audits, de l'epic jusqu'à #34 puis de #35 à #42 : 0 critique, 0 haute, 0 moyenne, 2 basses. Une corrigée (<a href="https://github.com/yannicktian/secret-santa/pull/35">PR #35</a>), une acceptée par toi. Deux paquets npm lancés par erreur sur orca-server, vérifiés sans danger.</p>
+</section>
+<section>
+<h2>Changements proposés</h2>
+<ul><li><a href="https://github.com/yannicktian/factory/issues/59">factory#59</a> et <a href="https://github.com/yannicktian/orca-setup/issues/106">orca-setup#106</a> : ne plus lancer de paquet npm non voulu.</li><li>factory : faire de l'étape « Fusionner » du cycle d'une tâche un script qui refuse la fusion tant que l'intégration continue du dernier commit n'a pas réussi (une fusion est partie sur une vérification en échec, due à la facturation GitHub).</li><li>factory : une petite itération ou une tâche qui touche la spec, chemin sensible ici, passe par un relecteur, et ses critères changés vont dans « À confirmer ».</li></ul>
+</section>
+</main>
+</body>
+</html>
