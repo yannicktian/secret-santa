@@ -233,7 +233,7 @@ p {
   background: var(--holly);
   color: var(--white);
   justify-content: center;
-  font-size: 1.15rem;
+  font-size: 1.25rem;
 }
 .btn.danger {
   background: var(--berry);
@@ -488,7 +488,7 @@ input:focus-visible {
 }
 .row .n {
   font-weight: 700;
-  font-size: 1.2rem;
+  font-size: 1.25rem;
 }
 .row .st {
   color: var(--muted);
