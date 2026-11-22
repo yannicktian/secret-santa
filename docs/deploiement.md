@@ -8,7 +8,7 @@ l'[architecture](architecture.md#hébergement-et-déploiement).
 
 | Déploiement | Adresse | Accès |
 |---|---|---|
-| Production, la branche `main` | <https://secret-santa-one-lemon.vercel.app> | Public |
+| Production, la branche `main` | <https://secret-santa-one-lemon.vercel.app> | Public : c'est le lien à envoyer aux participants |
 | Revue, chaque branche poussée | `https://secret-santa-<id>-yannicktians-projects.vercel.app` | Protégé par l'authentification de Vercel : sans être connecté au compte, la page répond 302 |
 
 Les autres alias de la production (`secret-santa-yannicktians-projects.vercel.app`,
@@ -24,12 +24,12 @@ dans la région de `vercel.json`.
 
 ## Vérifier la production
 
-Ces commandes ne font que des lectures sans donnée. Ne jamais appeler `choose-password`,
-`open-gift` ni `reserved` sur la production : un mot de passe choisi par un agent ferait
-le vrai tirage.
+Ces commandes ne font que des lectures sans donnée. Ne jamais appeler `participant`,
+`choose-password`, `open-gift` ni `reserved` sur la production, ni rien y envoyer en
+`POST` : un mot de passe choisi par un agent ferait le vrai tirage.
 
-1. La santé du déploiement : `store` doit valoir `redis` ; `reservedPage` vaut `true` une
-   fois `ADMIN_PASSWORD` posée.
+1. La santé du déploiement, qui ne lit pas la base : `store` doit valoir `redis`, et
+   `reservedPage` `true` (`ADMIN_PASSWORD` est posée).
 
    ```sh
    curl -s https://secret-santa-one-lemon.vercel.app/api/health
@@ -42,7 +42,13 @@ le vrai tirage.
    curl -s -D - -o /dev/null https://secret-santa-one-lemon.vercel.app/
    ```
 
-3. Les sources ne sont pas servies : chacune de ces deux commandes affiche `404`.
+3. La page réservée est servie : la commande affiche `<title>Page réservée</title>`.
+
+   ```sh
+   curl -s https://secret-santa-one-lemon.vercel.app/reservee | grep '<title>'
+   ```
+
+4. Les sources ne sont pas servies : chacune de ces deux commandes affiche `404`.
 
    ```sh
    curl -s -o /dev/null -w '%{http_code}\n' https://secret-santa-one-lemon.vercel.app/package.json
@@ -114,23 +120,42 @@ dossier :
 npx -y vercel@65.12.1 env add ADMIN_PASSWORD --environment production --sensitive --project secret-santa --scope yannicktians-projects
 ```
 
-La CLI demande la valeur. Commande non essayée : elle écrit en production. Selon la
-documentation de Vercel, une variable ne s'applique qu'aux déploiements faits après
-elle : le déploiement de la fusion suivante sur `main` la lit (non constaté ici).
+La CLI demande la valeur. Commande non essayée par un agent : elle écrit en production.
+Une variable ne s'applique qu'aux déploiements faits après elle : il faut redéployer la
+production, ou attendre la fusion suivante sur `main`, pour que `/api/health` réponde
+`"reservedPage": true`.
 
 ## Constats
 
-Le 22 novembre 2026, sur le déploiement de production du commit `70e2a63` (tâche 1),
-fait par l'intégration Git, lu par les commandes ci-dessus :
+Le 22 novembre 2026, sur le déploiement de production du commit `002b16d` (tâche 12, la
+dernière fusionnée), fait par l'intégration Git, lu par les commandes ci-dessus, sans
+appel à une fonction qui lit ou écrit la base :
 
 | Point | Constaté |
 |---|---|
-| Signature Web des fonctions | `api/health.js`, qui n'exporte que `GET`, répond à `GET /api/health` ; `HEAD` et `POST` y répondent 405 |
-| Dossier servi | `outputDirectory` de `vercel.json` s'applique (les réglages du projet n'en fixent aucun) : `/` sert `public/index.html` ; `/package.json`, `/lib/http.js`, `/vercel.json` et `/README.md` répondent 404 |
-| `cleanUrls` | `/index.html` redirige (308) vers `/`, et `/api/health.js` vers `/api/health`. `/reservee` répond 404 tant que `public/reservee.html` n'existe pas |
-| En-têtes | Ceux de `vercel.json` sur `/` et `/api/health`, plus `strict-transport-security` posé par Vercel. `/` est en `cache-control: no-store` mais servi par le cache de Vercel (`x-vercel-cache: HIT`), qui est vidé à chaque déploiement |
-| `VERCEL_ENV` à l'exécution | Non constaté dans une réponse : aucune fonction ne la renvoie. L'exposition automatique des variables système est active dans les réglages du projet (`autoExposeSystemEnvs`) |
+| Déploiement | `target: production`, prêt, fonctions en `sfo1` ; seul alias public, `secret-santa-one-lemon.vercel.app` ; les deux autres alias répondent 302 |
+| Pages | `GET /` sert « Secret santa de Noël » et `GET /reservee` « Page réservée », octet pour octet comme `public/` de `main`, ainsi que les scripts et `style.css` |
+| Signature Web des fonctions | `api/health.js`, qui n'exporte que `GET`, répond à `GET /api/health` ; `HEAD` y répond 405 |
+| Dossier servi | `outputDirectory` de `vercel.json` s'applique : `/package.json`, `/lib/http.js`, `/vercel.json`, `/README.md` et `/.env` répondent 404 |
+| `cleanUrls` | `/index.html` redirige (308) vers `/`, `/reservee.html` vers `/reservee`, et `/api/health.js` vers `/api/health` |
+| En-têtes | Ceux de `vercel.json` sur `/`, `/reservee` et `/api/health`, dont `cache-control: no-store`, plus `strict-transport-security` posé par Vercel. Vercel ajoute `access-control-allow-origin: *` aux fichiers de `public/`, pas aux fonctions |
 | Stockage | `GET /api/health` répond `"store": "redis"`, sans lire la base |
-| Région de la base | `sfo1` (San Francisco), la région par défaut de l'intégration. Les fonctions de ce déploiement tournaient en `fra1` ; `vercel.json` passe à `sfo1` pour les mettre à côté de la base |
-| Node.js | La version de `engines.node` de `package.json` l'emporte sur celle des réglages du projet, qui est 26, avec un avertissement du build quand elles diffèrent |
-| Page réservée | `"reservedPage": false` : `ADMIN_PASSWORD` n'est pas encore posée |
+| Page réservée | `"reservedPage": true` : `ADMIN_PASSWORD` est posée, de type sensible, en production seulement |
+| Variables | `KV_REST_API_URL`, `KV_REST_API_TOKEN`, `KV_REST_API_READ_ONLY_TOKEN`, `KV_URL`, `REDIS_URL` et `ADMIN_PASSWORD`, toutes en production seulement (noms lus, jamais les valeurs) |
+| Région de la base | `sfo1` (San Francisco), comme les fonctions |
+| Node.js | `26.x` dans les réglages du projet comme dans `engines.node` de `package.json` |
+| `VERCEL_ENV` à l'exécution | Non constaté dans une réponse : aucune fonction ne la renvoie. L'exposition automatique des variables système est active dans les réglages du projet (`autoExposeSystemEnvs`) |
+
+Les contrôles passent sur `main` à ce commit : `npm run check` et `npm run test:e2e` en
+local (Node 24, sur orca-server), et la CI de GitHub (Node 26).
+
+### Pas encore constaté
+
+Aucun agent n'a lu ni écrit la base : ces points ne se voient qu'avec le vrai tirage.
+
+| Point | Se constate |
+|---|---|
+| Redis lu derrière les fonctions | Au constat humain : la page réservée, ouverte avec le mot de passe d'administration, lit les sept `password:<id>` (« Pas encore de mot de passe » partout). L'entrée compte aussi l'essai (`fails:admin`, effacé quand le mot de passe est bon) |
+| Redis écrit, et le tirage fait | Au constat humain : le premier mot de passe validé écrit le tirage (`draw`, une seule fois) et l'empreinte du mot de passe (`password:<id>`) ; la page réservée affiche ensuite « Mot de passe choisi » pour ce participant |
+| Le reste des usages | Au premier usage par les participants : leur retour avec « Voir mon tirage », un mot de passe effacé depuis la page réservée, les 5 essais ratés |
+| Quotas gratuits de Vercel et d'Upstash | À l'usage ; non vérifié |
