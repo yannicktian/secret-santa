@@ -79,9 +79,10 @@ de troisième « à corriger ».
 
 ## Sécurité
 
-Audit de l'epic entière : 0 critique, 0 haute, 0 moyenne, 2 basses. Une corrigée
-([PR #35](https://github.com/yannicktian/secret-santa/pull/35)), une acceptée par toi.
-Deux paquets npm lancés par erreur sur orca-server, vérifiés sans danger.
+Deux audits, de l'epic jusqu'à #34 puis de #35 à #42 : 0 critique, 0 haute, 0 moyenne,
+2 basses. Une corrigée ([PR #35](https://github.com/yannicktian/secret-santa/pull/35)),
+une acceptée par toi. Deux paquets npm lancés par erreur sur orca-server, vérifiés sans
+danger.
 
 ## Changements proposés
 
