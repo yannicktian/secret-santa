@@ -2,8 +2,8 @@
 
 Epic [#1](https://github.com/yannicktian/secret-santa/issues/1). Le site du secret santa
 familial du 25 décembre 2026 : chacun dit qui il est, choisit un mot de passe à sa première
-visite, et découvre à qui il offre son cadeau. Yannick fait le tirage et efface un mot de
-passe oublié depuis la page réservée.
+visite, et découvre à qui il offre son cadeau. Le site fait le tirage tout seul ; Yannick
+efface un mot de passe oublié depuis la page réservée.
 
 Besoin : [cahier des charges](../cahier-des-charges.md). Mots montrés :
 [glossaire](../glossaire.md). La page de l'epic sur le site du projet illustre cette spec
@@ -25,8 +25,9 @@ Aucun écran ne répond à « qui m'offre mon cadeau ? » : c'est le secret.
 ## Périmètre
 
 Sept participants, dans cet ordre partout : Yannick, Léa, Christine, Guigui, Mamet, Anne,
-Loulou. Le site a une seule adresse, sa racine, envoyée à chacun. On le lit surtout sur un
-téléphone, aussi sur une tablette ou un ordinateur.
+Loulou. Le site a une seule adresse, sa racine, envoyée à chacun. Les participants
+l'ouvrent sur leur téléphone : le site est conçu pour lui d'abord (voir
+[Affichage](#affichage)).
 
 Écrans : l'accueil, le mot de passe (nouveau ou à redonner), le paquet, et la page
 réservée de Yannick.
@@ -53,8 +54,6 @@ Critères :
   le compte à rebours ne s'affichent plus.
 - Chaque bouton de participant fait au moins 56 pixels de haut et toute sa surface est
   cliquable.
-- Tant que le tirage n'est pas fait (S7), les boutons sont remplacés par « Le tirage n'est
-  pas encore fait. Reviens un peu plus tard ! ».
 - Aucun lien de l'accueil ne mène à la page réservée.
 
 ### S2 — Choisir son mot de passe, la première fois
@@ -147,19 +146,19 @@ Critères :
   Yannick, et la phrase « Les tirages ne s'affichent jamais ici, pas même le tien. » le
   rappelle.
 
-### S7 — Faire le tirage
+### S7 — Le tirage
 
-Avant d'envoyer le lien, Yannick fait le tirage depuis la page réservée, une seule fois,
-sans le voir.
+Le site fait le tirage tout seul, une seule fois, sans que personne n'ait rien à faire ni à
+voir.
 
 Critères :
 
-- Tant que le tirage n'est pas fait, la page réservée montre « Le tirage n'est pas encore
-  fait. » et le bouton « Faire le tirage », à la place de la liste des participants.
-- « Faire le tirage » ouvre la confirmation « Faire le tirage maintenant ? Il ne pourra pas
-  être refait. » avec les boutons « Faire le tirage » et « Annuler ».
-- Le tirage confirmé, la page affiche « Tirage fait. » et la liste des participants (S6) ;
-  le bouton « Faire le tirage » n'existe plus.
+- Le tirage est fait la première fois qu'un participant valide son mot de passe (S2), avant
+  que son paquet s'ouvre ; aucun écran ne dit qu'il n'est pas encore fait.
+- Il n'est fait qu'une fois, même si deux participants valident leur mot de passe au même
+  moment ; ensuite il ne change plus, ni quand un mot de passe est effacé, ni quand le site
+  redémarre.
+- Aucun écran ne permet de le refaire ni de le voir en entier.
 - Le tirage attribue à chaque participant un autre participant, différent de lui-même ;
   chacun est attribué à un seul participant.
 - Le tirage est fait au hasard : tous les tirages qui respectent ces règles ont la même
@@ -168,8 +167,18 @@ Critères :
 
 ## Affichage
 
-- Le site se lit d'abord sur téléphone, en portrait, dès 360 pixels de large, sans
-  défilement horizontal ; il reste centré et lisible sur tablette et ordinateur.
+- **Mobile first** : chaque écran est conçu pour un téléphone tenu en portrait, dès
+  360 pixels de large, sans défilement horizontal ni zoom. Sur une tablette ou un
+  ordinateur, la même colonne s'affiche, centrée ; aucun écran n'y ajoute rien.
+- Le lien s'ouvre aussi bien dans le navigateur du téléphone que depuis un SMS, WhatsApp
+  ou un e-mail, dans le navigateur intégré à ces applications.
+- Sur l'écran du mot de passe, quand le clavier du téléphone est ouvert, le champ et le
+  bouton « Valider » ou « Voir mon tirage » restent visibles sans faire défiler.
+- Tout se fait au doigt : chaque élément à toucher fait au moins 48 pixels de côté, aucun
+  ne demande de survol, de double touche ni d'appui long.
+- Sur l'accueil, le titre, la présentation et la question « Qui es-tu ? » tiennent dans
+  le premier écran d'un téléphone de 360 × 640 pixels ; les boutons des prénoms suivent
+  en faisant défiler.
 - Le texte courant fait au moins 20 pixels, les boutons au moins 56 pixels de haut ; les
   contrastes atteignent le niveau AA des règles d'accessibilité du web (WCAG).
 - Le style est celui d'un jeu vidéo, sobre : écran de sélection pour « Qui es-tu ? »,
@@ -193,7 +202,6 @@ par un nombre de jours.
 | Compte à rebours | Plus que `<n>` jours ! · C'est demain ! · C'est aujourd'hui ! |
 | Question | Qui es-tu ? |
 | Boutons | Yannick · Léa · Christine · Guigui · Mamet · Anne · Loulou |
-| Tirage pas fait | Le tirage n'est pas encore fait. Reviens un peu plus tard ! |
 
 ### Mot de passe (S2, S3)
 
@@ -223,7 +231,7 @@ par un nombre de jours.
 | Rappel | Garde le secret jusqu'au 25 décembre ! |
 | Bouton | Retour à l'accueil |
 
-### Page réservée (S6, S7)
+### Page réservée (S6)
 
 | Élément | Texte |
 |---|---|
@@ -231,10 +239,6 @@ par un nombre de jours.
 | Champ | Mot de passe d'administration |
 | Bouton | Entrer |
 | Mauvais mot de passe | Ce n'est pas le bon mot de passe. |
-| Tirage pas fait | Le tirage n'est pas encore fait. |
-| Bouton tirage | Faire le tirage |
-| Confirmation tirage | Faire le tirage maintenant ? Il ne pourra pas être refait. |
-| Tirage fait | Tirage fait. |
 | Titre de la liste | Participants |
 | État | Mot de passe choisi · Pas encore de mot de passe |
 | Bouton | Effacer le mot de passe |
@@ -253,8 +257,8 @@ par un nombre de jours.
 
 ## États vides et cassés
 
-- **Tirage pas encore fait** : l'accueil remplace les boutons par sa phrase (S1) ; la page
-  réservée propose le tirage (S7).
+- **Personne n'a encore validé de mot de passe** : le tirage n'existe pas encore ; rien ne
+  le montre, l'accueil est le même (S7).
 - **Quelqu'un a choisi le mauvais prénom à sa première visite** et un mot de passe à la
   place d'un autre : la vraie personne arrive sur « Redonner son mot de passe » (S3). Le
   message d'erreur l'envoie vers Yannick, qui efface le mot de passe (S6) ; elle en choisit
@@ -272,7 +276,8 @@ par un nombre de jours.
 
 ## Décisions
 
-Proposées par le product designer, à valider par Yannick.
+Proposées par le product designer ; D3, D4, D5, D7, D8 et D13 validées par Yannick
+le 22 novembre 2026, les autres à valider.
 
 | N° | Point | Décision | Raison | Options écartées |
 |---|---|---|---|---|
@@ -282,9 +287,10 @@ Proposées par le product designer, à valider par Yannick.
 | D4 | Reconnaissance du mot de passe | Sans tenir compte des majuscules, des accents ni des espaces au bout | Les téléphones mettent une majuscule au premier mot ; « Noël » ou « noel », c'est le même souvenir | Reconnaissance exacte : de faux oublis, donc des effacements par Yannick |
 | D5 | Mémoriser la personne sur l'appareil | Non : chaque visite redemande le mot de passe | En famille, on se prête téléphones et tablettes ; un tirage ne doit pas s'afficher pour le suivant | Rester connecté : plus simple, mais le tirage visible sur un appareil prêté |
 | D6 | Afficher le tirage | Un paquet à ouvrir d'une touche, à chaque visite | L'esprit jeu vidéo du cahier des charges, et une petite surprise ; une touche ne coûte rien | Le prénom affiché tout de suite : plus sec |
-| D7 | Qui fait le tirage et quand | Yannick, depuis la page réservée, une seule fois, avant d'envoyer le lien | Le tirage réel est une tâche humaine ; Yannick participe, donc le site le fait sans le lui montrer | Tirage automatique au premier passage : rien à faire, mais aucun moment choisi. Pouvoir le refaire : ceux qui ont déjà vu le leur se tromperaient de cadeau |
+| D7 | Qui fait le tirage et quand | Le site, tout seul, à la première validation d'un mot de passe, une seule fois | Choix de Yannick : rien à faire ni à oublier avant d'envoyer le lien, et personne ne voit le tirage | Un bouton « Faire le tirage » sur la page réservée : une action de plus pour Yannick. Pouvoir le refaire : ceux qui ont déjà vu le leur se tromperaient de cadeau |
 | D8 | Règles du tirage | Seulement celles du cahier des charges : personne ne se tire soi-même, chacun offre à un seul et reçoit d'un seul ; deux personnes peuvent s'offrir l'une à l'autre | Le cahier des charges n'en demande pas d'autre | Exclure les couples ou les paires réciproques : à ajouter si Yannick le demande |
 | D9 | Essais ratés | Une minute d'attente après 5 essais ratés de suite | Freine celui qui devinerait le mot de passe d'un autre, sans bloquer longtemps une personne qui hésite | Aucune limite : quatre lettres se devinent. Blocage jusqu'à Yannick : trop lourd |
 | D10 | Ton | Tutoiement, phrases courtes, quelques points d'exclamation | Un jeu en famille | Vouvoiement : distant |
 | D11 | Ce que voit Yannick | L'état du mot de passe de chacun, jamais un tirage ni un mot de passe | Il participe : il doit pouvoir relancer et dépanner sans connaître de secret | Lui montrer les tirages : il connaîtrait celui des autres |
 | D12 | Maquette | Les vrais prénoms, un tirage fictif marqué comme tel | On juge l'écran avec ses vrais boutons ; le tirage montré ne dit rien du vrai, qui n'existe pas encore | Des prénoms inventés : on juge moins bien l'accueil |
+| D13 | Appareil visé | Mobile first : chaque écran conçu pour un téléphone en portrait ; tablette et ordinateur affichent la même colonne | Demande de Yannick : les participants seront sur leur téléphone | Un affichage propre à l'ordinateur : du travail pour un usage marginal |
