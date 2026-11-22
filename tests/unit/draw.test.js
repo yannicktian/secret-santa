@@ -13,7 +13,7 @@ const EXPECTED = 100;
 const DRAWS = POSSIBLE_DRAWS * EXPECTED;
 /**
  * Chi-square at 1 853 degrees of freedom whose chance of being exceeded by a uniform
- * draw is below one in a million.
+ * draw is about three in a million.
  */
 const CHI_SQUARE_LIMIT = 2142;
 
