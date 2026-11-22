@@ -53,7 +53,7 @@
       <li>Dans cet ordre : titre, présentation, date, compte à rebours, « Qui es-tu ? » et un bouton par participant.</li>
       <li>Compte à rebours en jours, heure de Paris : « Plus que 33 jours ! » le 22 novembre, « Plus que 2 jours ! » le 23 décembre, « C'est demain ! » le 24, « C'est aujourd'hui ! » le 25. Dès le 26, la date et le compte à rebours disparaissent.</li>
       <li>Chaque bouton fait au moins 56 pixels de haut, cliquable sur toute sa surface.</li>
-      <li>Au toucher d'un prénom, son bouton montre trois pixels qui clignotent à la place de sa flèche (immobiles avec « moins d'animations ») et les sept boutons sont désactivés jusqu'à la réponse ; si le site ne répond pas, ils redeviennent actifs avec « Oups… ».</li>
+      <li>L'accueil s'affiche sans attendre le site. Au toucher d'un prénom, S2 ou S3 s'affiche aussitôt quand le site a déjà dit, depuis l'ouverture de l'accueil, si ce participant a choisi son mot de passe ; sinon, son bouton montre trois pixels qui clignotent à la place de sa flèche (immobiles avec « moins d'animations ») et les sept boutons sont désactivés jusqu'à la réponse ; si le site ne répond pas, ils redeviennent actifs avec « Oups… ».</li>
       <li>Aucun lien ne mène à la page réservée.</li>
     </ul></details>
   <details open><summary>S2 — Choisir son mot de passe, la première fois</summary>
@@ -242,7 +242,7 @@
 
 <section id="architecture">
   <h2>Architecture technique</h2>
-  <p>Des pages statiques et quatre fonctions sur Vercel, une base Redis Upstash. Le téléphone ne garde rien : chaque fois qu'il faut voir son tirage ou ouvrir la page réservée, il envoie le mot de passe, et la fonction le vérifie.</p>
+  <p>Des pages statiques et cinq fonctions sur Vercel, une base Redis Upstash. Le téléphone ne garde rien : chaque fois qu'il faut voir son tirage ou ouvrir la page réservée, il envoie le mot de passe, et la fonction le vérifie.</p>
   <div class="diagram"><svg viewBox="0 0 760 290" role="img" aria-labelledby="schema-titre">
     <title id="schema-titre">Le téléphone charge les pages statiques, appelle les fonctions Vercel avec le mot de passe ; seules les fonctions lisent et écrivent la base Redis.</title>
     <defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0 0L10 5L0 10z"/></marker></defs>
@@ -262,7 +262,7 @@
     <text class="s" x="298" y="112">/ et /reservee, sans build</text>
     <rect class="hot" x="284" y="146" width="202" height="118" rx="6"/>
     <text class="t" x="298" y="170">Fonctions</text>
-    <text class="m" x="298" y="190">api/participant</text>
+    <text class="m" x="298" y="190">api/participant(s)</text>
     <text class="m" x="298" y="206">api/choose-password</text>
     <text class="m" x="298" y="222">api/open-gift</text>
     <text class="m" x="298" y="238">api/reserved</text>
