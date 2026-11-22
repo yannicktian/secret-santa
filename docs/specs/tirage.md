@@ -3,7 +3,7 @@
 Epic [#1](https://github.com/yannicktian/secret-santa/issues/1). Le site du secret santa
 familial du 25 décembre 2026 : chacun dit qui il est, choisit un mot de passe à sa première
 visite, et découvre à qui il offre son cadeau. Le site fait le tirage tout seul ; Yannick
-efface un mot de passe oublié depuis la page réservée.
+efface un mot de passe oublié depuis la page réservée, et peut y refaire le tirage.
 
 Besoin : [cahier des charges](../cahier-des-charges.md). Mots montrés :
 [glossaire](../glossaire.md). La page de l'epic sur le site du projet illustre cette spec
@@ -33,8 +33,7 @@ l'ouvrent sur leur téléphone : le site est conçu pour lui d'abord (voir
 réservée de Yannick.
 
 Hors périmètre : un budget, des idées de cadeaux ou une liste de souhaits, des messages ou
-des rappels envoyés aux participants, l'ajout ou le retrait d'un participant, un second
-tirage, une autre année.
+des rappels envoyés aux participants, l'ajout ou le retrait d'un participant, une autre année.
 
 ## Stories
 
@@ -108,8 +107,7 @@ Critères :
   pour l'ouvrir. ». Le paquet entier est cliquable.
 - Le paquet ouvert montre « Tu offres ton cadeau à », le prénom tiré, en grand,
   « Garde le secret jusqu'au 25 décembre ! » et le bouton « Retour à l'accueil ».
-- Le paquet s'ouvre à chaque visite, la première comme les suivantes, et montre toujours
-  le même prénom.
+- Le paquet s'ouvre à chaque visite, la première comme les suivantes, et montre toujours le même prénom, tant que Yannick ne refait pas le tirage (S8).
 - Quand l'appareil demande moins d'animations, le paquet s'ouvre sans animation.
 - Ni cet écran ni aucun autre ne dit qui offre son cadeau à la personne.
 
@@ -146,15 +144,14 @@ Critères :
   les boutons « Effacer » et « Annuler ».
 - « Effacer » efface le mot de passe, passe l'état à « Pas encore de mot de passe » et
   affiche « Mot de passe de <prénom> effacé. ». À sa visite suivante, la personne passe par
-  S2 et voit le même prénom dans le paquet.
+  S2 et voit le même prénom dans le paquet, sauf si Yannick a refait le tirage entre-temps (S8).
 - La page réservée ne montre jamais un tirage ni un mot de passe, pas même ceux de
   Yannick, et la phrase « Les tirages ne s'affichent jamais ici, pas même le tien. » le
   rappelle.
 
 ### S7 — Le tirage
 
-Le site fait le tirage tout seul, une seule fois, sans que personne n'ait rien à faire ni à
-voir.
+Le site fait le tirage tout seul, sans que personne n'ait rien à faire ni à voir ; seul Yannick peut le refaire (S8).
 
 Critères :
 
@@ -162,13 +159,35 @@ Critères :
   que son paquet s'ouvre ; aucun écran ne dit qu'il n'est pas encore fait.
 - Il n'est fait qu'une fois, même si deux participants valident leur mot de passe au même
   moment ; ensuite il ne change plus, ni quand un mot de passe est effacé, ni quand le site
-  redémarre.
-- Aucun écran ne permet de le refaire ni de le voir en entier.
+  redémarre, sauf quand Yannick le refait (S8).
+- Seule la page réservée permet de le refaire (S8) ; aucun écran ne le montre en entier.
 - Le tirage attribue à chaque participant un autre participant, différent de lui-même ;
   chacun est attribué à un seul participant.
 - Le tirage est fait au hasard : tous les tirages qui respectent ces règles ont la même
   chance de sortir, y compris ceux où deux personnes s'offrent leur cadeau l'une à l'autre.
   Un test le vérifie sur un grand nombre de tirages simulés.
+
+### S8 — Refaire le tirage
+
+Yannick refait le tirage depuis la page réservée, par exemple s'il ne lui convient pas.
+Tous les mots de passe sont effacés : chacun repasse par sa première visite et découvre le
+nouveau tirage.
+
+Critères :
+
+- Sous la liste des participants, la page réservée a le bouton « Refaire le tirage »,
+  toujours présent, que le tirage soit fait ou non.
+- Il ouvre la confirmation « Refaire le tirage ? » avec « Tous les mots de passe seront
+  effacés : chacun en choisira un nouveau et découvrira un nouveau tirage. », suivie, si des
+  participants ont un mot de passe, de « 1 personne a déjà vu son tirage. » ou « <n>
+  personnes ont déjà vu leur tirage. », et les boutons « Refaire le tirage » et « Annuler ».
+- « Refaire le tirage » efface le tirage et le mot de passe de chaque participant, avec ses
+  essais ratés ; la liste montre alors « Pas encore de mot de passe » pour tous, et la page
+  affiche « Tirage refait. Chacun choisira un nouveau mot de passe. ».
+- Le nouveau tirage est fait comme le premier (S7), à la prochaine validation d'un mot de
+  passe ; il suit les mêmes règles et le même hasard.
+- Si quelqu'un choisit ou redonne son mot de passe pendant que le tirage est refait, soit son mot de passe est effacé, soit le prénom qu'il voit est celui du nouveau tirage : personne ne garde un mot de passe avec le prénom d'un ancien tirage.
+- La page réservée ne montre toujours aucun tirage, ni l'ancien ni le nouveau.
 
 ## Affichage
 
@@ -194,8 +213,7 @@ Critères :
 
 ## Mots exacts
 
-Les textes entre chevrons sont remplacés : `<prénom>` par le prénom du participant, `<n>`
-par un nombre de jours.
+Les textes entre chevrons sont remplacés : `<prénom>` par le prénom du participant, `<n>` par un nombre : de jours sur l'accueil, de participants sur la page réservée.
 
 ### Accueil (S1)
 
@@ -237,7 +255,7 @@ par un nombre de jours.
 | Rappel | Garde le secret jusqu'au 25 décembre ! |
 | Bouton | Retour à l'accueil |
 
-### Page réservée (S6)
+### Page réservée (S6, S8)
 
 | Élément | Texte |
 |---|---|
@@ -254,6 +272,13 @@ par un nombre de jours.
 | Boutons de confirmation | Effacer · Annuler |
 | Effacé | Mot de passe de `<prénom>` effacé. |
 | Rappel | Les tirages ne s'affichent jamais ici, pas même le tien. |
+| Bouton | Refaire le tirage |
+| Confirmation | Refaire le tirage ? |
+| Explication | Tous les mots de passe seront effacés : chacun en choisira un nouveau et découvrira un nouveau tirage. |
+| Déjà vus, un | 1 personne a déjà vu son tirage. |
+| Déjà vus, plusieurs | `<n>` personnes ont déjà vu leur tirage. |
+| Boutons de confirmation | Refaire le tirage · Annuler |
+| Refait | Tirage refait. Chacun choisira un nouveau mot de passe. |
 
 ### Partout
 
@@ -275,6 +300,9 @@ par un nombre de jours.
 - **Mot de passe oublié** : S3 puis S6.
 - **Yannick oublie son propre mot de passe de participant** : il l'efface depuis la page
   réservée, comme pour les autres.
+- **Tirage refait pendant une visite** : sur « Redonner son mot de passe », « Voir mon tirage »
+  fait passer à « Choisir son mot de passe » (S2) ; un paquet déjà ouvert reste affiché
+  jusqu'au retour à l'accueil.
 - **Site injoignable ou réponse en échec** : l'écran en cours reste affiché avec « Oups, le
   site ne répond pas… » et « Réessayer », qui refait la dernière action ; rien n'est perdu
   de ce qui était tapé.
@@ -284,7 +312,7 @@ par un nombre de jours.
 ## Décisions
 
 Proposées par le product designer, validées par Yannick le 22 novembre 2026 ; D7 est
-son choix, à la place de la proposition écartée, et D14 sa demande.
+son choix, à la place de la proposition écartée, D14 et D15 ses demandes.
 
 | N° | Point | Décision | Raison | Options écartées |
 |---|---|---|---|---|
@@ -302,3 +330,4 @@ son choix, à la place de la proposition écartée, et D14 sa demande.
 | D12 | Maquette | Les vrais prénoms, un tirage fictif marqué comme tel | On juge l'écran avec ses vrais boutons ; le tirage montré ne dit rien du vrai, qui n'existe pas encore | Des prénoms inventés : on juge moins bien l'accueil |
 | D13 | Appareil visé | Mobile first : chaque écran conçu pour un téléphone en portrait ; tablette et ordinateur affichent la même colonne | Demande de Yannick : les participants seront sur leur téléphone | Un affichage propre à l'ordinateur : du travail pour un usage marginal |
 | D14 | Mot de passe oublié | Le dire sous le bouton « Voir mon tirage », dès l'arrivée sur l'écran ; le message d'erreur dit seulement de réessayer | Demande de Yannick : la personne qui sait qu'elle a oublié n'a pas à se tromper d'abord pour savoir quoi faire | Ne le dire qu'après une erreur : on cherche sans aide |
+| D15 | Refaire le tirage | Un bouton de la page réservée, toujours présent ; il efface le tirage et tous les mots de passe, et chacun découvre le nouveau tirage à sa prochaine visite. Demande de Yannick (22 novembre 2026), qui revient sur « pouvoir le refaire », écarté en D7 | Yannick a vu son tirage en essayant le site et veut pouvoir le refaire lui-même, sans qu'un agent touche à la base de production ; tout effacer évite que quelqu'un garde un prénom qui ne serait plus le sien | Le refaire seulement tant que personne d'autre n'a de mot de passe : moins souple. Garder les mots de passe : ceux qui avaient vu leur tirage verraient un autre prénom sans prévenir |
