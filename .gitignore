@@ -1,5 +1,7 @@
-.env
-.env.*
+.env*
 !.env.example
 node_modules/
 .vercel/
+captures/
+test-results/
+playwright-report/
