@@ -113,7 +113,7 @@
     <tr><td><code>POST /api/reserved</code></td><td><code>{ password, action: "list" }</code> ou <code>"erase"</code> avec <code>participant</code></td><td>200 <code>{ participants: [{ id, name, hasPassword }] }</code> · 400 · 401 · 429 · 503</td></tr>
     <tr><td><code>GET /api/health</code></td><td>—</td><td>200 <code>{ ok, store, reservedPage }</code></td></tr>
   </table></div>
-  <p>Toute autre réponse, une erreur 5xx ou un réseau coupé, fait afficher « Oups, le site ne répond pas… » sur l'écran en cours.</p>
+  <p>Toute autre réponse, une erreur 5xx, un réseau coupé ou aucune réponse en 15 secondes fait afficher « Oups, le site ne répond pas… » sur l'écran en cours.</p>
   <div class="example"><span class="eyebrow">Choisir son mot de passe (S2, S7)</span>
     <ol>
       <li>Moins de 4 caractères, espaces au bout retirés : 422 <code>too_short</code>.</li>
@@ -167,7 +167,7 @@
     <li>La page réservée garde le mot de passe d'administration le temps de la visite ; la recharger le redemande.</li>
     <li>Le style de la maquette, polices Pixelify Sans et Atkinson Hyperlegible depuis Google Fonts, un seul thème. Ni attribut <code>style</code> ni script en ligne : la politique de sécurité du contenu les refuse.</li>
     <li>Le compte à rebours prend la date du jour à Paris sur l'horloge de l'appareil.</li>
-    <li>Sur une erreur réseau ou 5xx, l'écran reste, avec le bandeau et « Réessayer », qui refait le même appel ; ce qui était tapé reste. Un appel dont l'écran a changé depuis ne montre ni sa réponse ni son bandeau.</li>
+    <li>Sur une erreur réseau, une réponse 5xx ou une réponse qui n'arrive pas en 15 secondes, l'écran reste, avec le bandeau et « Réessayer », qui refait le même appel ; ce qui était tapé reste. Un appel dont l'écran a changé depuis ne montre ni sa réponse ni son bandeau.</li>
     <li>Un seul appel à la fois : tant qu'une réponse est attendue, un nouvel appui sur le bouton d'envoi (et, sur la page réservée, sur « Effacer » ou « Annuler ») ne fait rien. Un double appui ne compte qu'un essai ; pendant le bandeau, le bouton refait l'appel. L'appui sur un prénom de l'accueil, simple lecture, n'est pas gardé.</li>
   </ul>
 </section>

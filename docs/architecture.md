@@ -96,8 +96,8 @@ passe qui n'est pas du texte, 400 `invalid_password`, sans rien écrire ni compt
 | `POST /api/reserved` | `{ password, action: "list" }` ou `{ password, action: "erase", participant }` | 200 `{ participants: [{ id, name, hasPassword }] }`, dans l'ordre du périmètre · 400 `unknown_action` · 401 `wrong_password` · 429 `locked` · 503 `admin_password_missing` |
 | `GET /api/health` | — | 200 `{ ok: true, store: "redis" \| "memory" \| "missing", reservedPage: true \| false }` |
 
-Les erreurs ont la forme `{ error: "<code>" }`. Toute autre réponse, une erreur 5xx ou un
-réseau coupé, fait afficher le bandeau « Oups, le site ne répond pas… » sur l'écran en
+Les erreurs ont la forme `{ error: "<code>" }`. Toute autre réponse, une erreur 5xx, un
+réseau coupé ou aucune réponse en 15 secondes fait afficher le bandeau « Oups, le site ne répond pas… » sur l'écran en
 cours.
 
 ### Choisir son mot de passe (S2, S7)
@@ -219,7 +219,7 @@ peut avancer.
   attribut `style` ni script en ligne : la politique de sécurité du contenu les refuse.
 - **Le compte à rebours** prend la date du jour à Paris sur l'horloge de l'appareil
   (`Intl.DateTimeFormat` avec `timeZone: "Europe/Paris"`).
-- **Le réseau** : `call(path, body, isCurrent)` de `call.js` fait l'appel ; sur une erreur réseau ou une réponse 5xx, l'écran reste affiché avec le bandeau et « Réessayer », qui refait le même appel ; ce qui était tapé reste dans le champ. `isCurrent`, rendu par `turn()` de `app.js`, dit si l'écran a changé depuis l'appel : sa réponse est alors ignorée et son bandeau n'est pas montré ; un changement d'écran ou un nouvel appel retire le bandeau d'un appel précédent. Un seul appel à la fois : tant que `waiting()` de `call.js` dit qu'une réponse de l'écran affiché est attendue, un nouvel appui sur son bouton d'envoi (et, sur la page réservée, sur « Effacer » ou « Annuler ») ne fait rien ; un double appui ne compte donc qu'un essai, et la liste de la page réservée montre la dernière réponse reçue. Pendant le bandeau, aucune réponse n'est attendue : le bouton refait l'appel. L'appui sur un prénom de l'accueil, simple lecture, n'est pas gardé : un double appui y fait deux appels `/api/participant`, dont seule la dernière réponse compte.
+- **Le réseau** : `call(path, body, isCurrent)` de `call.js` fait l'appel ; sur une erreur réseau, une réponse 5xx ou une réponse qui n'arrive pas en 15 secondes, l'écran reste affiché avec le bandeau et « Réessayer », qui refait le même appel ; ce qui était tapé reste dans le champ. Les 15 secondes laissent passer une connexion mobile lente et le démarrage à froid d'une fonction ; l'appel abandonné est sans risque, car une fonction refaite rend la même réponse ou une erreur gérée par l'écran (T1). `isCurrent`, rendu par `turn()` de `app.js`, dit si l'écran a changé depuis l'appel : sa réponse est alors ignorée et son bandeau n'est pas montré ; un changement d'écran ou un nouvel appel retire le bandeau d'un appel précédent. Un seul appel à la fois : tant que `waiting()` de `call.js` dit qu'une réponse de l'écran affiché est attendue, un nouvel appui sur son bouton d'envoi (et, sur la page réservée, sur « Effacer » ou « Annuler ») ne fait rien ; un double appui ne compte donc qu'un essai, et la liste de la page réservée montre la dernière réponse reçue. Pendant le bandeau, aucune réponse n'est attendue : le bouton refait l'appel. L'appui sur un prénom de l'accueil, simple lecture, n'est pas gardé : un double appui y fait deux appels `/api/participant`, dont seule la dernière réponse compte.
 
 ## Sécurité
 

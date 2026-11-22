@@ -3,6 +3,12 @@
 /** The error codes of the functions that a screen handles itself (docs/architecture.md). */
 const handled = new Set(["too_short", "already_chosen", "no_password", "wrong_password", "locked"]);
 
+/**
+ * How long a call waits for its answer, in milliseconds, before the banner (« Le réseau » of
+ * docs/architecture.md).
+ */
+const delay = 15_000;
+
 /** @type {HTMLElement | null} */
 let banner = null;
 
@@ -54,22 +60,29 @@ function showBanner(retry) {
 
 /**
  * One call: its answer, or null when the site does not answer as the table of the functions
- * says (network cut, 5xx, any other status or body).
+ * says (network cut, 5xx, any other status or body, no answer within `delay`). The delay is
+ * an AbortController and a timer, not AbortSignal.timeout, which Safari lacks before 16.
  * @param {string} path
  * @param {unknown} body
  * @returns {Promise<{ status: number, data: any } | null>}
  */
 async function attempt(path, body) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), delay);
   try {
     const response = await fetch(path, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
       cache: "no-store",
+      signal: controller.signal,
     });
     const data = await response.json();
     if (response.ok || handled.has(data?.error)) return { status: response.status, data };
-  } catch {}
+  } catch {
+  } finally {
+    clearTimeout(timer);
+  }
   return null;
 }
 
