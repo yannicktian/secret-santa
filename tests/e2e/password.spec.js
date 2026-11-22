@@ -367,6 +367,104 @@ test.describe("S3, back again", () => {
   });
 });
 
+test.describe("one call at a time", () => {
+  /**
+   * Holds the answers of a function for 800 ms, so that a second tap comes while one is
+   * awaited.
+   * @param {import("@playwright/test").Page} page
+   * @param {string} path
+   */
+  async function slow(page, path) {
+    await page.route(`**${path}`, async (route) => {
+      await new Promise((resolve) => setTimeout(resolve, 800));
+      return route.fallback();
+    });
+  }
+
+  test("a double tap on « Voir mon tirage » makes one call, so one failed attempt", async ({
+    page,
+  }) => {
+    const calls = await openPassword(page, "Léa", {
+      hasPassword: true,
+      open: [{ status: 401, json: { error: "wrong_password" } }],
+    });
+    await slow(page, "/api/open-gift");
+    await page.getByLabel("Ton mot de passe").fill("Caribou");
+    await page.getByRole("button", { name: "Voir mon tirage" }).dblclick();
+    await page.getByLabel("Ton mot de passe").press("Enter");
+    await expect(page.locator(".error")).toHaveText(wrong);
+    await page.waitForTimeout(1000);
+    expect(writes(calls)).toEqual([
+      { path: "/api/open-gift", body: { participant: "lea", password: "Caribou" } },
+    ]);
+  });
+
+  test("a double tap on « Valider » makes one call", async ({ page }) => {
+    const calls = await openPassword(page, "Léa", {
+      hasPassword: false,
+      choose: [{ status: 429, json: { error: "locked" } }],
+    });
+    await slow(page, "/api/choose-password");
+    await page.getByLabel("Ton mot de passe").fill("Renne");
+    await page.getByRole("button", { name: "Valider" }).dblclick();
+    await expect(page.locator(".error")).toHaveText(locked);
+    await page.waitForTimeout(1000);
+    expect(writes(calls)).toHaveLength(1);
+  });
+
+  test("once the answer is there, the button sends again", async ({ page }) => {
+    const calls = await openPassword(page, "Léa", {
+      hasPassword: true,
+      open: [{ status: 401, json: { error: "wrong_password" } }, { json: { receiver } }],
+    });
+    await page.getByLabel("Ton mot de passe").fill("Caribou");
+    await page.getByRole("button", { name: "Voir mon tirage" }).click();
+    await expect(page.locator(".error")).toHaveText(wrong);
+    await page.getByLabel("Ton mot de passe").fill("Renne");
+    await page.getByRole("button", { name: "Voir mon tirage" }).click();
+    await expect(page.locator("main input")).toHaveCount(0);
+    await expect(page.getByText("Qui es-tu ?")).toHaveCount(0);
+    expect(writes(calls)).toHaveLength(2);
+  });
+
+  test("with the banner, the button sends again, and « Réessayer » still works", async ({
+    page,
+  }) => {
+    const calls = await openPassword(page, "Léa", {
+      hasPassword: true,
+      open: ["offline", "offline", { json: { receiver } }],
+    });
+    await slow(page, "/api/open-gift");
+    await page.getByLabel("Ton mot de passe").fill("Renne");
+    await page.getByRole("button", { name: "Voir mon tirage" }).dblclick();
+    await expect(page.locator(".banner")).toContainText(offline);
+    await page.getByRole("button", { name: "Voir mon tirage" }).click();
+    await expect(page.locator(".banner")).toContainText(offline);
+    await page.getByRole("button", { name: "Réessayer" }).click();
+    await expect(page.locator("main input")).toHaveCount(0);
+    await expect(page.getByText("Qui es-tu ?")).toHaveCount(0);
+    expect(writes(calls)).toHaveLength(3);
+  });
+
+  test("an answer still awaited from a previous visit of the screen does not block it", async ({
+    page,
+  }) => {
+    const calls = await openPassword(page, "Léa", {
+      hasPassword: true,
+      open: [{ status: 401, json: { error: "wrong_password" } }],
+    });
+    await slow(page, "/api/open-gift");
+    await page.getByLabel("Ton mot de passe").fill("Caribou");
+    await page.getByRole("button", { name: "Voir mon tirage" }).click();
+    await page.getByRole("button", { name: "Ce n'est pas moi" }).click();
+    await page.getByRole("button", { name: "Léa" }).click();
+    await page.getByLabel("Ton mot de passe").fill("Caribou");
+    await page.getByRole("button", { name: "Voir mon tirage" }).click();
+    await expect(page.locator(".error")).toHaveText(wrong);
+    expect(writes(calls)).toHaveLength(2);
+  });
+});
+
 test("keyboard open (360 × 340): the field and the button stay visible after touching the field", async ({
   page,
 }) => {

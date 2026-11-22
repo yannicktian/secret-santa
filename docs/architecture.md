@@ -38,7 +38,7 @@ Téléphone (navigateur)            Vercel (une adresse racine)              Ups
 | `public/index.html` | L'accueil et le conteneur des écrans du participant ; liens vers les polices, `style.css`, `app.js` |
 | `public/style.css` | Le style de tous les écrans, repris de la maquette (`docs/site/epics/1-tirage-maquette.html`), sans les réglages de la maquette |
 | `public/app.js` | L'état en mémoire des écrans du participant, l'accueil (S1), le passage d'un écran à l'autre sans entrée d'historique (S5), les appels par `call.js` |
-| `public/call.js` | L'appel aux fonctions (`call`) et le bandeau « Oups, le site ne répond pas… » avec « Réessayer », repris par `app.js` et `reserved.js` |
+| `public/call.js` | L'appel aux fonctions (`call`), l'attente d'une réponse (`waiting`) et le bandeau « Oups, le site ne répond pas… » avec « Réessayer », repris par `app.js` et `reserved.js` |
 | `public/countdown.js` | Le compte à rebours de S1, fonction pure de la date du jour à Paris |
 | `public/screens/password.js` | Les écrans du mot de passe : le choisir (S2), le redonner (S3) |
 | `public/screens/gift.js` | L'écran du paquet (S4), paquet en pixels et ouverture |
@@ -219,7 +219,7 @@ peut avancer.
   attribut `style` ni script en ligne : la politique de sécurité du contenu les refuse.
 - **Le compte à rebours** prend la date du jour à Paris sur l'horloge de l'appareil
   (`Intl.DateTimeFormat` avec `timeZone: "Europe/Paris"`).
-- **Le réseau** : `call(path, body, isCurrent)` de `call.js` fait l'appel ; sur une erreur réseau ou une réponse 5xx, l'écran reste affiché avec le bandeau et « Réessayer », qui refait le même appel ; ce qui était tapé reste dans le champ. `isCurrent`, rendu par `turn()` de `app.js`, dit si l'écran a changé depuis l'appel : sa réponse est alors ignorée et son bandeau n'est pas montré ; un changement d'écran ou un nouvel appel retire le bandeau d'un appel précédent.
+- **Le réseau** : `call(path, body, isCurrent)` de `call.js` fait l'appel ; sur une erreur réseau ou une réponse 5xx, l'écran reste affiché avec le bandeau et « Réessayer », qui refait le même appel ; ce qui était tapé reste dans le champ. `isCurrent`, rendu par `turn()` de `app.js`, dit si l'écran a changé depuis l'appel : sa réponse est alors ignorée et son bandeau n'est pas montré ; un changement d'écran ou un nouvel appel retire le bandeau d'un appel précédent. Un seul appel à la fois : tant que `waiting()` de `call.js` dit qu'une réponse de l'écran affiché est attendue, un nouvel appui sur son bouton d'envoi (et, sur la page réservée, sur « Effacer » ou « Annuler ») ne fait rien ; un double appui ne compte donc qu'un essai, et la liste de la page réservée montre la dernière réponse reçue. Pendant le bandeau, aucune réponse n'est attendue : le bouton refait l'appel. L'appui sur un prénom de l'accueil, simple lecture, n'est pas gardé : un double appui y fait deux appels `/api/participant`, dont seule la dernière réponse compte.
 
 ## Sécurité
 
