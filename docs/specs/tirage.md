@@ -276,8 +276,8 @@ par un nombre de jours.
 
 ## Décisions
 
-Proposées par le product designer ; D3, D4, D5, D7, D8 et D13 validées par Yannick
-le 22 novembre 2026, les autres à valider.
+Proposées par le product designer, validées par Yannick le 22 novembre 2026 ; D7 est
+son choix, à la place de la proposition écartée.
 
 | N° | Point | Décision | Raison | Options écartées |
 |---|---|---|---|---|
