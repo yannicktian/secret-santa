@@ -189,7 +189,7 @@ prochain choix d'un mot de passe, comme le premier (S7).
 
 **Garantie de concurrence** : qui choisit ou redonne son mot de passe pendant un tirage
 refait garde un mot de passe seulement avec un prénom du tirage gardé. Elle tient à
-l'ordre des écritures, sans transaction :
+l'ordre des écritures, sans transaction, sur une base où chaque lecture voit toute écriture déjà acquittée, même faite par une autre fonction (sans région de lecture : le `readYourWrites` de `@upstash/redis` ne vaut que pour un même client, et chaque appel crée le sien) :
 
 1. Le tirage refait efface `draw` avant tout mot de passe.
 2. Choisir son mot de passe relit `draw` après avoir écrit ou vérifié l'empreinte, et ne

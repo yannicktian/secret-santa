@@ -152,7 +152,7 @@
   </ul>
   <h3>Refaire le tirage (S8)</h3>
   <p>Le tirage est supprimé, puis l'empreinte, le compteur et le blocage de chaque participant ; le nouveau tirage est fait au prochain choix d'un mot de passe, comme le premier.</p>
-  <p><strong>Garantie de concurrence</strong>, par l'ordre des écritures, sans transaction : qui choisit ou redonne son mot de passe pendant un tirage refait garde un mot de passe seulement avec un prénom du tirage gardé.</p>
+  <p><strong>Garantie de concurrence</strong>, par l'ordre des écritures, sans transaction, sur une base sans région de lecture : qui choisit ou redonne son mot de passe pendant un tirage refait garde un mot de passe seulement avec un prénom du tirage gardé.</p>
   <ol>
     <li>Le tirage refait efface le tirage avant tout mot de passe.</li>
     <li>Choisir relit le tirage après avoir écrit ou vérifié l'empreinte, et ne répond que s'il n'a pas changé ; redonner ne lit le tirage qu'après la vérification.</li>
