@@ -209,6 +209,7 @@ function pwBack(){
       <p class="hint">Majuscules ou minuscules : peu importe.</p>
       ${S.msg?`<p class="error" role="alert">${S.msg}</p>`:""}
       <button class="btn primary" type="submit">Voir mon tirage</button>
+      <p class="hint">${S.who==="Yannick"?"Mot de passe oublié ? Efface-le depuis la page réservée.":"Mot de passe oublié ? Demande à Yannick de l&#39;effacer : tu en choisiras un nouveau, et ton tirage ne changera pas."}</p>
     </form>
   </div></div>
   <button class="link" type="button" data-act="notme">Ce n'est pas moi</button>`;
@@ -276,7 +277,7 @@ function submitPw(v){
     if(norm(v)===norm(S.pw[p])){S.fails[p]=0;go("gift");return;}
     S.fails[p]=(S.fails[p]||0)+1;
     if(S.fails[p]>=5){S.lockUntil[p]=Date.now()+60000;S.fails[p]=0;S.msg="Beaucoup d'essais ratés : attends une minute avant de réessayer.";}
-    else S.msg=p==="Yannick"?"Ce n'est pas le bon mot de passe. Réessaie, ou efface-le depuis la page réservée.":"Ce n'est pas le bon mot de passe. Réessaie, ou demande à Yannick de l'effacer : tu en choisiras un nouveau.";
+    else S.msg="Ce n'est pas le bon mot de passe. Réessaie.";
     render();
   };
   if(!down(act))act();

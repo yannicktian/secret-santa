@@ -81,15 +81,18 @@ redonner.
 Critères :
 
 - L'écran montre « Bonjour <prénom> ! », le champ « Ton mot de passe », l'aide
-  « Majuscules ou minuscules : peu importe. », le bouton « Voir mon tirage » et le lien
-  « Ce n'est pas moi ».
+  « Majuscules ou minuscules : peu importe. », le bouton « Voir mon tirage », puis, sous le
+  bouton, « Mot de passe oublié ? Demande à Yannick de l'effacer : tu en choisiras un
+  nouveau, et ton tirage ne changera pas. », et le lien « Ce n'est pas moi ». Pour Yannick,
+  le texte du mot de passe oublié devient « Mot de passe oublié ? Efface-le depuis la page
+  réservée. ».
+- Le texte du mot de passe oublié est affiché dès l'arrivée sur l'écran, sans attendre une
+  erreur.
 - Le mot de passe est reconnu sans tenir compte des majuscules, des accents ni des espaces
   du début et de la fin : « Noël », « noel » et « NOEL » sont le même mot de passe.
 - Un bon mot de passe ouvre le paquet (S4).
 - Un mauvais mot de passe laisse l'écran tel quel, vide le champ et affiche
-  « Ce n'est pas le bon mot de passe. Réessaie, ou demande à Yannick de l'effacer : tu en
-  choisiras un nouveau. ». Pour Yannick, la seconde phrase devient « Réessaie, ou
-  efface-le depuis la page réservée. ».
+  « Ce n'est pas le bon mot de passe. Réessaie. ».
 - Après 5 mauvais essais de suite pour un même participant, le site refuse les essais pour
   ce participant pendant une minute et affiche « Beaucoup d'essais ratés : attends une
   minute avant de réessayer. » ; un bon essai remet le compte à zéro.
@@ -215,8 +218,9 @@ par un nombre de jours.
 | Trop court | Il faut au moins 4 lettres ou chiffres. |
 | Aide, retour | Majuscules ou minuscules : peu importe. |
 | Bouton, retour | Voir mon tirage |
-| Mauvais mot de passe | Ce n'est pas le bon mot de passe. Réessaie, ou demande à Yannick de l'effacer : tu en choisiras un nouveau. |
-| Mauvais mot de passe, Yannick | Ce n'est pas le bon mot de passe. Réessaie, ou efface-le depuis la page réservée. |
+| Mot de passe oublié | Mot de passe oublié ? Demande à Yannick de l'effacer : tu en choisiras un nouveau, et ton tirage ne changera pas. |
+| Mot de passe oublié, Yannick | Mot de passe oublié ? Efface-le depuis la page réservée. |
+| Mauvais mot de passe | Ce n'est pas le bon mot de passe. Réessaie. |
 | Trop d'essais | Beaucoup d'essais ratés : attends une minute avant de réessayer. |
 | Lien | Ce n'est pas moi |
 
@@ -261,7 +265,7 @@ par un nombre de jours.
   le montre, l'accueil est le même (S7).
 - **Quelqu'un a choisi le mauvais prénom à sa première visite** et un mot de passe à la
   place d'un autre : la vraie personne arrive sur « Redonner son mot de passe » (S3). Le
-  message d'erreur l'envoie vers Yannick, qui efface le mot de passe (S6) ; elle en choisit
+  texte « Mot de passe oublié ? » l'envoie vers Yannick, qui efface le mot de passe (S6) ; elle en choisit
   un nouveau. Celui qui s'est trompé a vu le tirage d'un autre : le site ne peut pas
   l'empêcher, il le limite en accueillant par le prénom et en offrant « Ce n'est pas moi »
   avant tout enregistrement.
@@ -277,7 +281,7 @@ par un nombre de jours.
 ## Décisions
 
 Proposées par le product designer, validées par Yannick le 22 novembre 2026 ; D7 est
-son choix, à la place de la proposition écartée.
+son choix, à la place de la proposition écartée, et D14 sa demande.
 
 | N° | Point | Décision | Raison | Options écartées |
 |---|---|---|---|---|
@@ -294,3 +298,4 @@ son choix, à la place de la proposition écartée.
 | D11 | Ce que voit Yannick | L'état du mot de passe de chacun, jamais un tirage ni un mot de passe | Il participe : il doit pouvoir relancer et dépanner sans connaître de secret | Lui montrer les tirages : il connaîtrait celui des autres |
 | D12 | Maquette | Les vrais prénoms, un tirage fictif marqué comme tel | On juge l'écran avec ses vrais boutons ; le tirage montré ne dit rien du vrai, qui n'existe pas encore | Des prénoms inventés : on juge moins bien l'accueil |
 | D13 | Appareil visé | Mobile first : chaque écran conçu pour un téléphone en portrait ; tablette et ordinateur affichent la même colonne | Demande de Yannick : les participants seront sur leur téléphone | Un affichage propre à l'ordinateur : du travail pour un usage marginal |
+| D14 | Mot de passe oublié | Le dire sous le bouton « Voir mon tirage », dès l'arrivée sur l'écran ; le message d'erreur dit seulement de réessayer | Demande de Yannick : la personne qui sait qu'elle a oublié n'a pas à se tromper d'abord pour savoir quoi faire | Ne le dire qu'après une erreur : on cherche sans aide |

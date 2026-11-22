@@ -64,9 +64,10 @@
     </ul></details>
   <details open><summary>S3 — Redonner son mot de passe</summary>
     <ul>
-      <li>« Bonjour &lt;prénom&gt; ! », « Ton mot de passe », l'aide « Majuscules ou minuscules : peu importe. », « Voir mon tirage » et « Ce n'est pas moi ».</li>
+      <li>« Bonjour &lt;prénom&gt; ! », « Ton mot de passe », l'aide « Majuscules ou minuscules : peu importe. », « Voir mon tirage », « Ce n'est pas moi ».</li>
+      <li>Sous le bouton, dès l'arrivée : « Mot de passe oublié ? Demande à Yannick de l'effacer : tu en choisiras un nouveau, et ton tirage ne changera pas. » Pour Yannick : « Mot de passe oublié ? Efface-le depuis la page réservée. »</li>
       <li>Ni les majuscules, ni les accents, ni les espaces au bout ne comptent : « Noël », « noel » et « NOEL » sont le même mot de passe.</li>
-      <li>Mauvais mot de passe : le champ se vide, avec « Ce n'est pas le bon mot de passe. Réessaie, ou demande à Yannick de l'effacer : tu en choisiras un nouveau. » Pour Yannick : « Réessaie, ou efface-le depuis la page réservée. »</li>
+      <li>Mauvais mot de passe : le champ se vide, avec « Ce n'est pas le bon mot de passe. Réessaie. »</li>
       <li>5 mauvais essais de suite : une minute d'attente pour ce participant, avec « Beaucoup d'essais ratés : attends une minute avant de réessayer. »</li>
     </ul></details>
   <details open><summary>S4 — Ouvrir le paquet</summary>
@@ -145,8 +146,9 @@
     <tr><td>Trop court</td><td>Il faut au moins 4 lettres ou chiffres.</td></tr>
     <tr><td>Aide, retour</td><td>Majuscules ou minuscules : peu importe.</td></tr>
     <tr><td>Bouton, retour</td><td>Voir mon tirage</td></tr>
-    <tr><td>Mauvais mot de passe</td><td>Ce n'est pas le bon mot de passe. Réessaie, ou demande à Yannick de l'effacer : tu en choisiras un nouveau.</td></tr>
-    <tr><td>Mauvais mot de passe, Yannick</td><td>Ce n'est pas le bon mot de passe. Réessaie, ou efface-le depuis la page réservée.</td></tr>
+    <tr><td>Mot de passe oublié</td><td>Mot de passe oublié ? Demande à Yannick de l'effacer : tu en choisiras un nouveau, et ton tirage ne changera pas.</td></tr>
+    <tr><td>Mot de passe oublié, Yannick</td><td>Mot de passe oublié ? Efface-le depuis la page réservée.</td></tr>
+    <tr><td>Mauvais mot de passe</td><td>Ce n'est pas le bon mot de passe. Réessaie.</td></tr>
     <tr><td>Trop d'essais</td><td>Beaucoup d'essais ratés : attends une minute avant de réessayer.</td></tr>
     <tr><td>Lien</td><td>Ce n'est pas moi</td></tr>
   </table></div>
@@ -188,7 +190,7 @@
   <h2>États vides et cassés</h2>
   <ul>
     <li><strong>Personne n'a encore validé de mot de passe</strong> : le tirage n'existe pas encore ; rien ne le montre.</li>
-    <li><strong>Mauvais prénom touché à la première visite</strong>, et mot de passe choisi à la place d'un autre : la vraie personne tombe sur « Redonner son mot de passe » ; le message l'envoie vers Yannick, qui l'efface. Celui qui s'est trompé a vu le tirage d'un autre : le site le limite par « Bonjour &lt;prénom&gt; ! » et « Ce n'est pas moi » avant tout enregistrement.</li>
+    <li><strong>Mauvais prénom touché à la première visite</strong>, et mot de passe choisi à la place d'un autre : la vraie personne tombe sur « Redonner son mot de passe » ; le texte « Mot de passe oublié ? » l'envoie vers Yannick, qui l'efface. Celui qui s'est trompé a vu le tirage d'un autre : le site le limite par « Bonjour &lt;prénom&gt; ! » et « Ce n'est pas moi » avant tout enregistrement.</li>
     <li><strong>Mot de passe oublié</strong> : S3 puis S6.</li>
     <li><strong>Yannick oublie le sien</strong> : il l'efface depuis la page réservée.</li>
     <li><strong>Site injoignable</strong> : l'écran reste, avec « Oups, le site ne répond pas… » et « Réessayer », qui refait la dernière action ; ce qui était tapé reste.</li>
@@ -198,7 +200,7 @@
 
 <section>
   <h2>Décisions</h2>
-  <p>Proposées par le product designer, validées par Yannick le 22 novembre 2026 ; D7 est son choix, à la place de la proposition écartée.</p>
+  <p>Proposées par le product designer, validées par Yannick le 22 novembre 2026 ; D7 est son choix, à la place de la proposition écartée, et D14 sa demande.</p>
   <div class="table"><table>
     <tr><th>N°</th><th>Point</th><th>Décision</th><th>Raison</th><th>Options écartées</th></tr>
     <tr><td>D1</td><td>Dire qui on est</td><td>Un gros bouton par prénom, sans rien taper</td><td>Le plus simple sans clavier ; sept prénoms tiennent sur un écran</td><td>Taper son prénom</td></tr>
@@ -214,6 +216,7 @@
     <tr><td>D11</td><td>Ce que voit Yannick</td><td>L'état du mot de passe de chacun, jamais un tirage ni un mot de passe</td><td>Il participe</td><td>Lui montrer les tirages</td></tr>
     <tr><td>D12</td><td>Maquette</td><td>Les vrais prénoms, un tirage fictif marqué comme tel</td><td>On juge l'écran avec ses vrais boutons</td><td>Des prénoms inventés</td></tr>
     <tr><td>D13</td><td>Appareil visé</td><td>Mobile first : chaque écran conçu pour un téléphone en portrait</td><td>Demande de Yannick : les participants seront sur leur téléphone</td><td>Un affichage propre à l'ordinateur</td></tr>
+    <tr><td>D14</td><td>Mot de passe oublié</td><td>Le dire sous « Voir mon tirage », dès l'arrivée ; l'erreur dit seulement de réessayer</td><td>Demande de Yannick : savoir quoi faire sans devoir se tromper d'abord</td><td>Ne le dire qu'après une erreur</td></tr>
   </table></div>
 </section>
 </main>
