@@ -246,10 +246,16 @@ function admin(){
       <p><strong>Effacer le mot de passe de ${esc(p)} ?</strong></p>
       <p>${esc(p)} en choisira un nouveau à sa prochaine visite. Son tirage ne change pas.</p>
       <div class="actions"><button class="btn danger" type="button" data-act="doerase" data-p="${p}">Effacer</button><button class="btn plain" type="button" data-act="cancel">Annuler</button></div></div></div>`;}
+  if(S.confirm==="redraw"){const n=PLAYERS.filter(p=>S.pw[p]).length;return`${head}<div class="shadow"><div class="panel">
+      <p><strong>Refaire le tirage ?</strong></p>
+      <p>Tous les mots de passe seront effacés : chacun en choisira un nouveau et découvrira un nouveau tirage.</p>
+      ${n===1?"<p>1 personne a déjà vu son tirage.</p>":n>1?`<p>${n} personnes ont déjà vu leur tirage.</p>`:""}
+      <div class="actions"><button class="btn danger" type="button" data-act="doredraw">Refaire le tirage</button><button class="btn plain" type="button" data-act="cancel">Annuler</button></div></div></div>`;}
   return`${head}${S.adminMsg?`<p class="ok" role="status">${S.adminMsg}</p>`:""}
     <div class="shadow"><div class="panel"><h2>Participants</h2><div class="list">
     ${PLAYERS.map(p=>{const on=!!S.pw[p];return`<div class="row"><span class="n">${p}</span><span class="st${on?" on":""}">${on?"Mot de passe choisi":"Pas encore de mot de passe"}</span>${on?`<button class="btn danger" type="button" data-act="askerase" data-p="${p}">Effacer le mot de passe</button>`:""}</div>`;}).join("")}
-    </div>${note}</div></div>`;
+    </div>${note}</div></div>
+    <div class="shadow"><div class="panel"><button class="btn danger" type="button" data-act="askredraw">Refaire le tirage</button></div></div>`;
 }
 function bind(){
   scr.querySelectorAll("[data-p].player").forEach(b=>b.onclick=()=>{const p=b.dataset.p;const act=()=>go(S.pw[p]?"pwBack":"pwNew",{who:p,typed:""});if(!down(act))act();});
@@ -287,10 +293,12 @@ function action(a,p){
   const run={
     askerase:()=>{S.confirm={erase:p};S.adminMsg=null;render();},
     doerase:()=>{delete S.pw[p];S.confirm=null;S.adminMsg=`Mot de passe de ${p} effacé.`;render();},
+    askredraw:()=>{S.confirm="redraw";S.adminMsg=null;render();},
+    doredraw:()=>{S.pw={};S.fails={};S.lockUntil={};S.confirm=null;S.adminMsg="Tirage refait. Chacun choisira un nouveau mot de passe.";render();},
     cancel:()=>{S.confirm=null;render();}
   }[a];
   if(!run)return;
-  if(a==="doerase"&&down(run))return;
+  if((a==="doerase"||a==="doredraw")&&down(run))return;
   run();
 }
 $("#ctl-date").onchange=()=>{if(S.screen==="home")render();};
