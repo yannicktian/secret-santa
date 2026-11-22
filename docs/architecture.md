@@ -296,8 +296,14 @@ d'une base gratuite peu utilisée.
 - **Pas de build** : `public/` est servi tel quel ; `npm run check` est la preuve que le
   code tient.
 - **Intégration continue** : `.github/workflows/check.yml` (GitHub Actions, job `check`),
-  sous Node.js 26, à chaque pull request et chaque poussée sur `main` : `npm ci`,
-  `npx playwright install --with-deps chromium`, `npm run check`, `npm run test:e2e`.
+  sous Node.js 26, à chaque pull request et chaque poussée sur `main` :
+  `npm ci --ignore-scripts`, `npx playwright install --with-deps chromium`,
+  `npm run check`, `npm run test:e2e`. Les actions sont épinglées par le SHA complet de
+  leur commit, la version en commentaire : `actions/checkout` v7.0.1, `actions/setup-node`
+  v7.1.0 ; une mise à jour change le SHA et le commentaire ensemble. Aucune dépendance n'a
+  de script d'installation (pas de `hasInstallScript` dans `package-lock.json`) : les
+  navigateurs de Playwright viennent de sa commande à part. Une dépendance ajoutée qui en
+  aurait besoin se signale dans sa pull request.
 - **Versions de Node.js** : 26 pour la CI et Vercel (`engines.node` « 26.x »,
   `@types/node` 26.x). Le serveur de développement garde Node.js 24, dont d'autres projets
   dépendent : les contrôles locaux y tournent, et `npm ci` y avertit (`EBADENGINE`) que

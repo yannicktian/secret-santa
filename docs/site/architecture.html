@@ -206,7 +206,7 @@
   <ul>
     <li><code>npm run check</code> : Biome (lint et format), <code>tsc</code> (JavaScript vérifié par JSDoc, strict), <code>node --test</code>.</li>
     <li><code>npm run test:e2e</code> : Playwright (Chromium) contre le serveur local sur le double en mémoire, à 360 et 1280 pixels ; avec <code>CAPTURES=1</code>, les captures dans <code>captures/</code>, ignoré par git.</li>
-    <li>Pas de build. Intégration continue GitHub Actions sous Node.js 26 à chaque pull request et poussée sur <code>main</code>.</li>
+    <li>Pas de build. Intégration continue GitHub Actions sous Node.js 26 à chaque pull request et poussée sur <code>main</code> : actions épinglées par le SHA de leur commit (<code>actions/checkout</code> v7.0.1, <code>actions/setup-node</code> v7.1.0), <code>npm ci --ignore-scripts</code> (aucune dépendance n'a de script d'installation ; les navigateurs de Playwright viennent de sa commande à part).</li>
     <li>Node.js 26 pour la CI et Vercel ; le serveur de développement garde Node.js 24, dont d'autres projets dépendent : les contrôles locaux y tournent, <code>npm ci</code> y avertit (<code>EBADENGINE</code>) que <code>engines</code> demande 26, ce qui est attendu. La CI sous Node.js 26 fait foi avant chaque fusion.</li>
     <li>Dépendances aux versions exactes : <code>@upstash/redis</code> 1.41.0 (seule dépendance du site, plus <code>uncrypto</code>), et pour le développement <code>@biomejs/biome</code> 2.6.8, <code>typescript</code> 7.0.2, <code>@types/node</code> 26.6.6, <code>@playwright/test</code> 1.65.1, installées et essayées le 22 novembre 2026.</li>
   </ul>
