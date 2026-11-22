@@ -248,7 +248,7 @@ cinq fois ; qui choisit le prénom d'un autre à sa première visite voit son ti
 
 - **Vercel**, offre gratuite, un projet `secret-santa` relié au repo GitHub, une seule
   adresse racine, sur le compte `yannicktians-projects` (offre Hobby). Fonctions en
-  Node.js 24 (`engines.node` de `package.json`), dans la région que `vercel.json` fixe :
+  Node.js 26 (`engines.node` de `package.json`, « 26.x »), dans la région que `vercel.json` fixe :
   `sfo1`, celle de la base (la région par défaut de l'intégration, non choisie).
   `vercel.json` sert `public/` (`outputDirectory`), sans commande de build, avec
   `cleanUrls` pour que `/reservee` serve `reservee.html`.
@@ -296,11 +296,16 @@ d'une base gratuite peu utilisée.
 - **Pas de build** : `public/` est servi tel quel ; `npm run check` est la preuve que le
   code tient.
 - **Intégration continue** : `.github/workflows/check.yml` (GitHub Actions, job `check`),
-  à chaque pull request et chaque poussée sur `main` : `npm ci`,
+  sous Node.js 26, à chaque pull request et chaque poussée sur `main` : `npm ci`,
   `npx playwright install --with-deps chromium`, `npm run check`, `npm run test:e2e`.
+- **Versions de Node.js** : 26 pour la CI et Vercel (`engines.node` « 26.x »,
+  `@types/node` 26.x). Le serveur de développement garde Node.js 24, dont d'autres projets
+  dépendent : les contrôles locaux y tournent, et `npm ci` y avertit (`EBADENGINE`) que
+  `engines` demande 26, ce qui est attendu. La CI sous Node.js 26 fait foi avant chaque
+  fusion.
 - **Dépendances**, toutes de développement sauf la première, versions exactes :
   `@upstash/redis` 1.41.0 (une sous-dépendance, `uncrypto`), `@biomejs/biome` 2.6.8,
-  `typescript` 7.0.2, `@types/node` 24.19.2, `@playwright/test` 1.65.1. Installées et essayées sur
+  `typescript` 7.0.2, `@types/node` 26.6.6, `@playwright/test` 1.65.1. Installées et essayées sur
   le serveur de développement le 22 novembre 2026 : `tsc` signale une erreur de type en
   JSDoc, Biome lint des modules ES (`"type": "module"`), Playwright lance Chromium après
   `npx playwright install chromium`, et le client Upstash envoie bien

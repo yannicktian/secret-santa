@@ -132,5 +132,5 @@ fait par l'intégration Git, lu par les commandes ci-dessus :
 | `VERCEL_ENV` à l'exécution | Non constaté dans une réponse : aucune fonction ne la renvoie. L'exposition automatique des variables système est active dans les réglages du projet (`autoExposeSystemEnvs`) |
 | Stockage | `GET /api/health` répond `"store": "redis"`, sans lire la base |
 | Région de la base | `sfo1` (San Francisco), la région par défaut de l'intégration. Les fonctions de ce déploiement tournaient en `fra1` ; `vercel.json` passe à `sfo1` pour les mettre à côté de la base |
-| Node.js | 24, par `engines.node` de `package.json`, au lieu du 26 des réglages du projet (avertissement du build) |
+| Node.js | La version de `engines.node` de `package.json` l'emporte sur celle des réglages du projet, qui est 26, avec un avertissement du build quand elles diffèrent |
 | Page réservée | `"reservedPage": false` : `ADMIN_PASSWORD` n'est pas encore posée |

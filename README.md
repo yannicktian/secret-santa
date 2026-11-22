@@ -15,8 +15,9 @@ passe, et découvre à qui il offre son cadeau.
 
 ## Développer
 
-Il faut Node.js 24. Les contrôles et le serveur local n'utilisent que le stockage en
-mémoire, jamais la base de production.
+Il faut Node.js 26, ou 24 avec un avertissement de `npm ci`
+([versions de Node.js](docs/architecture.md#contrôles)). Les contrôles et le serveur local
+n'utilisent que le stockage en mémoire, jamais la base de production.
 
 1. Installer les dépendances et le navigateur des tests :
 

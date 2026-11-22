@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "engines": {
-    "node": "24.x"
+    "node": "26.x"
   },
   "scripts": {
     "check": "npm run lint && npm run typecheck && npm run test",
@@ -19,7 +19,7 @@
   "devDependencies": {
     "@biomejs/biome": "2.6.8",
     "@playwright/test": "1.65.1",
-    "@types/node": "24.19.2",
+    "@types/node": "26.6.6",
     "typescript": "7.0.2"
   }
 }
