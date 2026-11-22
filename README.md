@@ -9,6 +9,7 @@ passe, et découvre à qui il offre son cadeau.
 | Lire les specs, voir les maquettes | [Site du projet](https://claude.ai/artifact/4zsk6C5uLKWQQrimx88gkj) ([sources](docs/site/README.md)) |
 | Connaître les mots affichés | [Glossaire](docs/glossaire.md) |
 | Savoir comment le site est construit | [Architecture](docs/architecture.md), [découpage de l'epic 1](docs/plans/tirage.md) |
+| Ouvrir la production, la vérifier | <https://secret-santa-one-lemon.vercel.app>, [déploiement](docs/deploiement.md) |
 | Travailler sur le repo avec un agent | [AGENTS.md](AGENTS.md) |
 | Voir les avancées | [Changelog](CHANGELOG.md) |
 

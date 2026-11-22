@@ -63,7 +63,7 @@ Téléphone (navigateur)            Vercel (une adresse racine)              Ups
 | `tests/securite/` | Le test de fuite : rien de secret n'est envoyé au navigateur |
 | `vercel.json` | Dossier servi, adresses propres, en-têtes de sécurité, région |
 | `.github/workflows/check.yml` | L'intégration continue |
-| `docs/deploiement.md` | La procédure de déploiement et ce qui a été constaté sur Vercel, écrite par la tâche 6 du découpage |
+| `docs/deploiement.md` | Les adresses, la vérification de la production, les commandes de la CLI Vercel et ce qui a été constaté sur Vercel |
 
 ### Noms du code
 
@@ -240,16 +240,17 @@ cinq fois ; qui choisit le prénom d'un autre à sa première visite voit son ti
 - **Vercel**, offre gratuite, un projet `secret-santa` relié au repo GitHub, une seule
   adresse racine, sur le compte `yannicktians-projects` (offre Hobby). Fonctions en
   Node.js 24 (`engines.node` de `package.json`), dans la région que `vercel.json` fixe :
-  celle de la base, relevée par la tâche 6 (la base a été créée dans la région par défaut
-  de l'intégration, non choisie). `vercel.json` sert `public/` (`outputDirectory`),
-  sans commande de build, avec `cleanUrls` pour que `/reservee` serve `reservee.html`.
+  `sfo1`, celle de la base (la région par défaut de l'intégration, non choisie).
+  `vercel.json` sert `public/` (`outputDirectory`), sans commande de build, avec
+  `cleanUrls` pour que `/reservee` serve `reservee.html`.
 - **Production** : chaque fusion sur `main` est déployée par l'intégration Git de Vercel,
   une fois le projet relié au repo. Variables : celles de l'intégration Upstash (base
   `secret-santa-kv`), `ADMIN_PASSWORD`.
-- **Revue (Preview)** : chaque branche poussée, sans base ni `ADMIN_PASSWORD` : seules les
-  pages statiques et `api/health.js` y marchent ; les fonctions qui lisent la base y
-  répondent 500. Les écrans et les fonctions se prouvent par les tests, sur le double en
-  mémoire, en local et dans l'intégration continue.
+- **Revue (Preview)** : chaque branche poussée, sans base ni `ADMIN_PASSWORD`, derrière
+  l'authentification de Vercel : seules les pages statiques et `api/health.js` y
+  marchent ; les fonctions qui lisent la base y répondent 500. Les écrans et les
+  fonctions se prouvent par les tests, sur le double en mémoire, en local et dans
+  l'intégration continue.
 - **Ce que les agents font sur la production** : seulement des lectures sans donnée,
   `GET /`, `GET /reservee`, `GET /api/health`. Ils n'appellent jamais `choose-password`,
   `open-gift` ni `reserved` sur la production : un mot de passe choisi par un agent ferait
@@ -258,18 +259,21 @@ cinq fois ; qui choisit le prénom d'un autre à sa première visite voit son ti
   dans `docs/deploiement.md`) avec `VERCEL_TOKEN`, chargé depuis
   `~/.config/secret-santa/vercel.env` par `set -a; . ~/.config/secret-santa/vercel.env; set +a`,
   sans jamais l'afficher. `.vercel/` est ignoré par git.
-- Le détail et les constats sont dans `docs/deploiement.md`, écrit par la tâche 6.
+- Les adresses, les commandes et les constats sont dans [deploiement.md](deploiement.md).
 
 Constaté le 22 novembre 2026 : le projet `secret-santa` existe (créé par la CLI), la base
 `secret-santa-kv` est reliée à la seule production avec les variables ci-dessus, et
 l'offre gratuite d'Upstash n'accepte qu'une base par compte (une seconde a été refusée).
 
-Non vérifié, parce que propre à Vercel ou Upstash : la signature Web des fonctions sans
-framework, `outputDirectory` et `cleanUrls` sur un projet sans framework, la disponibilité
-de `VERCEL_ENV` à l'exécution et la région de la base, que la tâche 6 constate ; le
-comportement réel de Redis derrière les fonctions, que seule la production montre
-(lecture par la page réservée au constat humain de la tâche 13, première écriture au
-premier mot de passe choisi) ; les quotas gratuits des deux services et la conservation
+Constaté sur le premier déploiement de production, le 22 novembre 2026 (détail dans
+[deploiement.md](deploiement.md#constats)) : la signature Web des fonctions sans framework,
+`outputDirectory` et `cleanUrls` sur un projet sans framework, la région de la base.
+
+Non vérifié, parce que propre à Vercel ou Upstash : la présence de `VERCEL_ENV` à
+l'exécution, qu'aucune fonction ne renvoie (l'exposition des variables système est active
+dans les réglages du projet) ; le comportement réel de Redis derrière les fonctions, que
+seule la production montre (lecture par la page réservée au constat humain de la tâche 13,
+première écriture au premier mot de passe choisi) ; les quotas gratuits des deux services et la conservation
 d'une base gratuite peu utilisée.
 
 ## Contrôles
