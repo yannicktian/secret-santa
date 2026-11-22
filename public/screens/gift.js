@@ -3,9 +3,10 @@
 /**
  * @typedef {object} GiftContext
  * @property {string} receiver The name drawn, to show once the gift is open.
- * @property {() => () => boolean} turn To call before each call of call.js: the function it
- *   returns says, once the answer is there, whether it is still the last one asked for; if not,
- *   the answer is ignored, so that it does not replace a newer screen.
+ * @property {() => () => boolean} turn To call before each call of call.js, and to give to
+ *   call() as its third argument: the function it returns says, once the answer is there,
+ *   whether it is still the last one asked for; if not, the answer is ignored and no banner is
+ *   shown, so that it does not replace a newer screen.
  * @property {() => void} home Comes back to the home page and forgets everything.
  */
 

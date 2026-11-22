@@ -63,14 +63,15 @@ async function attempt(path, body) {
  * with the first answer of the table of the functions.
  * @param {string} path
  * @param {unknown} body
+ * @param {() => boolean} [isCurrent] From `turn()`: once the screen has changed, no banner.
  * @returns {Promise<{ status: number, data: any }>}
  */
-export function call(path, body) {
+export function call(path, body, isCurrent = () => true) {
   return new Promise((resolve) => {
     const run = async () => {
       const answer = await attempt(path, body);
       if (answer) resolve(answer);
-      else showBanner(run);
+      else if (isCurrent()) showBanner(run);
     };
     run();
   });

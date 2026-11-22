@@ -219,3 +219,19 @@ test("after a second failure, the focus is on « Réessayer »", async ({ page }
   await page.getByRole("button", { name: "Réessayer" }).click();
   await expect(page.getByRole("button", { name: "Réessayer" })).toBeFocused();
 });
+
+test("a late failure does not show the banner on a newer screen", async ({ page }) => {
+  await page.route("**/api/participant", async (route) => {
+    if (route.request().postDataJSON().participant === "lea") {
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+      return route.abort("internetdisconnected");
+    }
+    return route.fulfill({ json: { hasPassword: false } });
+  });
+  await page.goto("/");
+  await page.getByRole("button", { name: "Léa" }).click();
+  await page.getByRole("button", { name: "Mamet" }).click();
+  await expect(page.getByText("Bonjour Mamet !")).toBeVisible();
+  await page.waitForTimeout(2000);
+  await expect(page.getByRole("alert")).toHaveCount(0);
+});

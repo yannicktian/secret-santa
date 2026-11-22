@@ -208,9 +208,10 @@ peut avancer.
   attribut `style` ni script en ligne : la politique de sécurité du contenu les refuse.
 - **Le compte à rebours** prend la date du jour à Paris sur l'horloge de l'appareil
   (`Intl.DateTimeFormat` avec `timeZone: "Europe/Paris"`).
-- **Le réseau** : `call(path, body)` de `call.js` fait l'appel ; sur une erreur réseau ou
-  une réponse 5xx, l'écran reste affiché avec le bandeau et « Réessayer », qui refait le
-  même appel ; ce qui était tapé reste dans le champ.
+- **Le réseau** : `call(path, body, isCurrent)` de `call.js` fait l'appel ; `isCurrent`,
+  rendu par `turn()`, retire le bandeau d'un appel dont l'écran a changé ; sur une erreur
+  réseau ou une réponse 5xx, l'écran reste affiché avec le bandeau et « Réessayer », qui
+  refait le même appel ; ce qui était tapé reste dans le champ.
 
 ## Sécurité
 

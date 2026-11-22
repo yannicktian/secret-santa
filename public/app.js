@@ -40,6 +40,7 @@ let shown = 0;
  */
 function turn() {
   shown += 1;
+  clearBanner();
   const current = shown;
   return () => current === shown;
 }
@@ -57,7 +58,7 @@ function clear() {
  */
 async function choose(participant) {
   const isCurrent = turn();
-  const { data } = await call("/api/participant", { participant: participant.id });
+  const { data } = await call("/api/participant", { participant: participant.id }, isCurrent);
   if (!isCurrent()) return;
   clear();
   showPassword(root, {
