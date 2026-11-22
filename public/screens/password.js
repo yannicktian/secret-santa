@@ -1,15 +1,12 @@
 // The screens of the password: choosing it the first time (S2) and giving it back (S3).
-import { call, waiting } from "../call.js";
+import { call, turn, waiting } from "../call.js";
+import { button, element } from "../dom.js";
 
 /**
  * @typedef {object} PasswordContext
  * @property {{ id: string, name: string }} participant The participant touched on the home page.
  * @property {boolean} hasPassword From POST /api/participants or POST /api/participant: S3 if true, S2 otherwise.
  * @property {() => void} home Comes back to the home page and forgets everything.
- * @property {() => () => boolean} turn To call before each call of call.js, and to give to
- *   call() as its third argument: the function it returns says, once the answer is there,
- *   whether it is still the last one asked for; if not, the answer is ignored and no banner is
- *   shown, so that it does not replace a newer screen.
  * @property {(receiver: string) => void} gift Shows the gift screen with the name drawn.
  */
 
@@ -29,19 +26,6 @@ const words = {
   locked: "Beaucoup d'essais ratés : attends une minute avant de réessayer.",
   notMe: "Ce n'est pas moi",
 };
-
-/**
- * An element with its class and its text.
- * @param {string} tag
- * @param {string} className
- * @param {string} [text]
- */
-function element(tag, className, text = "") {
-  const node = document.createElement(tag);
-  if (className) node.className = className;
-  node.textContent = text;
-  return node;
-}
 
 /** The field shown, put back above the keyboard when the visible part of the page shrinks. */
 /** @type {(() => void) | null} */
@@ -119,7 +103,7 @@ function render(root, context, back) {
       show(words.tooShort);
       return;
     }
-    const isCurrent = context.turn();
+    const isCurrent = turn();
     error.remove();
     const path = back ? "/api/open-gift" : "/api/choose-password";
     const { data } = await call(path, { participant: participant.id, password }, isCurrent);
@@ -140,9 +124,7 @@ function render(root, context, back) {
     }
   });
 
-  const notMe = element("button", "link", words.notMe);
-  notMe.setAttribute("type", "button");
-  notMe.addEventListener("click", context.home);
+  const notMe = button("link", words.notMe, context.home);
 
   const panel = element("div", "panel");
   if (!back) panel.append(element("p", "", words.firstTime), element("p", "", words.advice));
