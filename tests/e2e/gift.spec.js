@@ -1,8 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-// The draws of these tests are fictitious. The password screen (task 9) is replaced by a
-// module that opens the gift at once with the name given, so that the gift screen is tested
-// inside the real app.js, with its real home page.
+// The draws and passwords of these tests are fictitious; the calls are intercepted.
 
 const names = ["Yannick", "Léa", "Christine", "Guigui", "Mamet", "Anne", "Loulou"];
 const closedText = "Ton tirage est dans ce paquet.";
@@ -18,15 +16,20 @@ const back = "Retour à l'accueil";
  */
 async function openGift(page, receiver = "Christine") {
   await page.route("**/api/participant", (route) => route.fulfill({ json: { hasPassword: true } }));
-  await page.route("**/screens/password.js", (route) =>
-    route.fulfill({
-      contentType: "text/javascript",
-      body: `export function showPassword(root, context) { context.gift(${JSON.stringify(receiver)}); }`,
-    }),
-  );
+  await page.route("**/api/open-gift", (route) => route.fulfill({ json: { receiver } }));
   await page.clock.setFixedTime(new Date("2026-11-22T10:00:00+01:00"));
   await page.goto("/");
+  await chooseLea(page);
+}
+
+/**
+ * From the home page, Léa gives her password: the gift screen is shown.
+ * @param {import("@playwright/test").Page} page
+ */
+async function chooseLea(page) {
   await page.getByRole("button", { name: "Léa" }).click();
+  await page.getByLabel("Ton mot de passe").fill("Renne");
+  await page.getByRole("button", { name: "Voir mon tirage" }).click();
   await expect(page.getByText(closedText)).toBeVisible();
 }
 
@@ -196,7 +199,7 @@ test("no history entry; back then forward, or reload, shows the home page", asyn
   await expect(page.getByRole("heading", { level: 2 })).toHaveText("Qui es-tu ?");
   expect(await page.content()).not.toContain("Zoé");
 
-  await page.getByRole("button", { name: "Léa" }).click();
+  await chooseLea(page);
   await gift(page).click();
   await expect(page.getByText(to)).toBeVisible();
   await page.reload();
