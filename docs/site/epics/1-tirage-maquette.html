@@ -1,0 +1,316 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="claude:viewport-fit-sides" content="cover">
+<title>Maquette du secret santa</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Pixelify+Sans:wght@500;700&display=swap">
+<style>
+/* Layout: a phone-sized game screen (night sky, pixel snow, one white "dialog" panel), with the
+   mockup controls beside it on wide screens and below it on phones. One deliberate theme. */
+:root{
+  --night:#17203a; --night-2:#22305a; --snow:#e9f1ff;
+  --ink:#141a2e; --paper:#ffffff; --paper-2:#eef2fb; --muted:#4a5470;
+  --berry:#c8283c; --berry-dark:#8f1526; --holly:#1f7a4d; --gold:#ffc83d; --ice:#9fd0ff;
+  --pixel:"Pixelify Sans","Courier New",monospace;
+  --read:"Atkinson Hyperlegible",system-ui,-apple-system,"Segoe UI",sans-serif;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--night);color:var(--ink);font-family:var(--read);font-size:20px;line-height:1.45;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 40px}
+#snow{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:0}
+.stage{position:relative;z-index:1;display:flex;gap:28px;justify-content:center;align-items:flex-start;flex-wrap:wrap}
+.phone{width:min(390px,100%);height:760px;max-height:calc(100vh - 40px);min-height:600px;border:4px solid var(--ink);border-radius:28px;
+  background:linear-gradient(var(--night-2),var(--night));box-shadow:0 0 0 6px #2c3b6b,0 16px 0 6px #0c1224;overflow:hidden;position:relative;display:flex;flex-direction:column}
+.screen{flex:1;overflow-y:auto;padding:22px 18px 28px;display:flex;flex-direction:column;gap:18px}
+.panel{background:var(--paper);border:4px solid var(--ink);box-shadow:6px 6px 0 var(--ink);padding:18px 18px 20px;display:flex;flex-direction:column;gap:14px;
+  clip-path:polygon(0 6px,6px 6px,6px 0,calc(100% - 6px) 0,calc(100% - 6px) 6px,100% 6px,100% calc(100% - 6px),calc(100% - 6px) calc(100% - 6px),calc(100% - 6px) 100%,6px 100%,6px calc(100% - 6px),0 calc(100% - 6px));
+  margin-right:6px;margin-bottom:6px}
+/* clip-path cuts the hard shadow, so draw it with a wrapper instead */
+.shadow{filter:drop-shadow(6px 6px 0 var(--ink))}
+.shadow>.panel{box-shadow:none;margin:0}
+h1,h2{font-family:var(--pixel);font-weight:700;margin:0;line-height:1.1;text-wrap:balance}
+h1{font-size:2.1rem;color:var(--snow);text-shadow:3px 3px 0 var(--berry)}
+h2{font-size:1.6rem}
+p{margin:0}
+.hello{font-family:var(--pixel);font-size:1.9rem;font-weight:700;color:var(--snow);text-shadow:3px 3px 0 var(--holly)}
+.date{display:flex;flex-direction:column;gap:6px}
+.countdown{font-family:var(--pixel);font-weight:700;font-size:1.5rem;color:var(--berry)}
+.who{font-family:var(--pixel);font-weight:700;font-size:1.7rem;color:var(--gold);text-shadow:3px 3px 0 var(--ink);margin-top:4px}
+.players{display:flex;flex-direction:column;gap:14px;padding-right:6px}
+.btn{font:inherit;font-weight:700;cursor:pointer;border:4px solid var(--ink);background:var(--gold);color:var(--ink);min-height:60px;padding:10px 16px;
+  box-shadow:0 6px 0 var(--ink);transform:translateY(0);transition:transform .06s,box-shadow .06s;display:flex;align-items:center;gap:14px;text-align:left;width:100%}
+.btn:active,.btn.pressed{transform:translateY(6px);box-shadow:0 0 0 var(--ink)}
+.btn:focus-visible{outline:4px solid var(--ice);outline-offset:3px}
+.btn.primary{background:var(--holly);color:#fff;justify-content:center;font-size:1.15rem}
+.btn.danger{background:var(--berry);color:#fff;justify-content:center}
+.btn.plain{background:var(--paper);justify-content:center}
+.player{background:var(--paper);font-size:1.3rem}
+.player .badge{width:38px;height:38px;flex:none;display:grid;place-items:center;font-family:var(--read);font-weight:700;font-size:1.2rem;color:#fff;border:3px solid var(--ink)}
+.player .arrow{margin-left:auto;font-family:var(--pixel);color:var(--muted)}
+.field{display:flex;flex-direction:column;gap:6px}
+label{font-weight:700}
+input[type=text],input[type=password]{font:inherit;font-size:1.3rem;padding:12px 14px;border:4px solid var(--ink);background:var(--paper-2);width:100%;min-height:60px;border-radius:0;color:var(--ink)}
+input:focus-visible{outline:4px solid var(--ice);outline-offset:2px}
+.hint{color:var(--muted);font-size:1rem}
+.error{color:var(--berry-dark);font-weight:700;background:#ffe3e6;border:3px solid var(--berry);padding:10px 12px}
+.ok{color:#0f4d2e;font-weight:700;background:#ddf5e7;border:3px solid var(--holly);padding:10px 12px}
+.link{font:inherit;background:none;border:0;color:var(--snow);text-decoration:underline;text-underline-offset:4px;cursor:pointer;padding:12px 4px;align-self:center;min-height:48px}
+.link.dark{color:var(--muted)}
+.gift-wrap{display:flex;flex-direction:column;align-items:center;gap:16px;text-align:center}
+.gift-wrap .lead{color:var(--snow);font-size:1.2rem}
+.giftbtn{background:none;border:0;padding:0;cursor:pointer;width:220px;max-width:80%;position:relative;aspect-ratio:1}
+.giftbtn:focus-visible{outline:4px dashed var(--ice);outline-offset:8px}
+.giftbtn svg{width:100%;height:100%;display:block;overflow:visible}
+.giftbtn.idle svg{animation:bob 1.6s steps(4) infinite}
+.giftbtn.shake svg{animation:shake .5s steps(6)}
+.giftbtn .lid{transition:transform .5s steps(6)}
+.giftbtn.open .lid{transform:translate(-3px,-9px) rotate(-18deg)}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+@keyframes shake{0%,100%{transform:rotate(0)}20%{transform:rotate(-6deg)}40%{transform:rotate(6deg)}60%{transform:rotate(-4deg)}80%{transform:rotate(4deg)}}
+.reveal{display:flex;flex-direction:column;gap:10px;align-items:center;text-align:center}
+.reveal .to{font-size:1.2rem}
+.reveal .name{font-family:var(--pixel);font-weight:700;font-size:3rem;color:var(--berry);line-height:1;animation:pop .45s steps(5)}
+@keyframes pop{0%{transform:scale(.2)}70%{transform:scale(1.15)}100%{transform:scale(1)}}
+.confetti{position:absolute;width:10px;height:10px;left:50%;top:40%;pointer-events:none;animation:fly 1.1s steps(10) forwards}
+@keyframes fly{to{transform:translate(var(--dx),var(--dy));opacity:0}}
+.list{display:flex;flex-direction:column;gap:12px}
+.row{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;border-bottom:3px dashed var(--paper-2);padding-bottom:12px}
+.row:last-child{border-bottom:0;padding-bottom:0}
+.row .n{font-weight:700;font-size:1.2rem}
+.row .st{font-size:1rem;color:var(--muted);flex:1;min-width:10ch}
+.row .st.on{color:var(--holly);font-weight:700}
+.row .btn{width:auto;min-height:48px;font-size:.95rem;padding:6px 12px;box-shadow:0 4px 0 var(--ink)}
+.row .btn:active{transform:translateY(4px)}
+.actions{display:flex;gap:12px;flex-wrap:wrap}
+.actions .btn{flex:1;min-width:8ch;justify-content:center}
+.toast{position:absolute;left:12px;right:12px;bottom:12px;z-index:3;background:var(--paper);border:4px solid var(--ink);box-shadow:4px 4px 0 var(--ink);padding:12px 14px;display:flex;flex-direction:column;gap:10px;font-size:1.05rem}
+.admin-tag{font-family:var(--pixel);font-size:.95rem;color:var(--ice);letter-spacing:.06em}
+/* mockup controls (not part of the site) */
+.controls{position:relative;z-index:1;width:min(360px,100%);background:#0f1628;color:#dfe7fb;border:2px dashed #51618f;border-radius:10px;padding:16px;
+  display:flex;flex-direction:column;gap:14px;font-size:15px;line-height:1.45;font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
+.controls h3{margin:0;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--gold)}
+.controls .tag{display:inline-block;background:var(--berry);color:#fff;font-weight:700;padding:2px 8px;border-radius:4px;font-size:13px}
+.controls label{font-weight:600}
+.controls select,.controls button{font:inherit;font-size:15px;padding:8px 10px;border-radius:6px;border:1px solid #51618f;background:#1b2540;color:#dfe7fb;cursor:pointer}
+.controls button:hover{background:#26335a}
+.controls .grp{display:flex;flex-direction:column;gap:6px}
+.controls .chk{display:flex;gap:8px;align-items:center;font-weight:400}
+.controls code{background:#1b2540;padding:1px 5px;border-radius:4px}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+@media (max-width:440px){.phone{height:auto;min-height:680px;max-height:none;border-radius:18px}}
+</style>
+</head>
+<body>
+<canvas id="snow" aria-hidden="true"></canvas>
+<div class="stage">
+  <div class="phone" id="phone"><div class="screen" id="screen" aria-live="polite"></div></div>
+  <aside class="controls" aria-label="Réglages de la maquette">
+    <div><span class="tag">Maquette · tirage fictif</span></div>
+    <p>Ce n'est pas le site : les écrans illustrent la spec, qui fait foi. Le tirage montré est inventé.</p>
+    <div class="grp"><h3>Pour essayer</h3>
+      <p>Yannick et Léa ont déjà un mot de passe : <code>sapin</code> (essaie <code>Sapin</code>). Les autres arrivent pour la première fois. Sur la page réservée, n'importe quel mot de passe ouvre.</p></div>
+    <div class="grp"><label for="ctl-date">Date du jour</label>
+      <select id="ctl-date">
+        <option value="2026-11-22">22 novembre 2026</option>
+        <option value="2026-12-23">23 décembre 2026</option>
+        <option value="2026-12-24">24 décembre 2026</option>
+        <option value="2026-12-25">25 décembre 2026</option>
+        <option value="2026-12-26">26 décembre 2026</option>
+      </select></div>
+    <div class="grp"><h3>État</h3>
+      <label class="chk"><input type="checkbox" id="ctl-draw" checked> Tirage fait</label>
+      <label class="chk"><input type="checkbox" id="ctl-down"> Site injoignable à la prochaine action</label>
+      <label class="chk"><input type="checkbox" id="ctl-motion"> Moins d'animations</label></div>
+    <div class="grp"><h3>Aller à</h3>
+      <button type="button" id="ctl-home">L'accueil</button>
+      <button type="button" id="ctl-admin">La page réservée (adresse à part)</button>
+      <button type="button" id="ctl-reset">Remettre la maquette à zéro</button></div>
+  </aside>
+</div>
+<script>
+(function(){
+const PLAYERS=["Yannick","Léa","Christine","Guigui","Mamet","Anne","Loulou"];
+const COLORS=["#c8283c","#1f7a4d","#2d5fd3","#9a4dd0","#d9731a","#0f8a8a","#b8407a"];
+const FAKE_DRAW={Yannick:"Christine",Léa:"Mamet",Christine:"Loulou",Guigui:"Anne",Mamet:"Guigui",Anne:"Yannick",Loulou:"Léa"};
+let S;
+function fresh(){return{screen:"home",who:null,pw:{Yannick:"sapin",Léa:"sapin"},fails:{},lockUntil:{},msg:null,opened:false,admin:false,adminFails:0,adminMsg:null,confirm:null,typed:""};}
+S=fresh();
+const $=s=>document.querySelector(s);
+const scr=$("#screen");
+const norm=s=>s.trim().toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"");
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const drawDone=()=>$("#ctl-draw").checked;
+function today(){return $("#ctl-date").value;}
+function countdown(){
+  const [y,m,d]=today().split("-").map(Number);
+  const n=Math.round((Date.UTC(2026,11,25)-Date.UTC(y,m-1,d))/864e5);
+  if(n<0)return null;
+  if(n===0)return"C'est aujourd'hui !";
+  if(n===1)return"C'est demain !";
+  return`Plus que ${n} jours !`;
+}
+function down(retry){
+  if(!$("#ctl-down").checked)return false;
+  $("#ctl-down").checked=false;
+  const t=document.createElement("div");t.className="toast";t.setAttribute("role","alert");
+  t.innerHTML=`<p>Oups, le site ne répond pas. Vérifie ta connexion à internet, puis réessaie.</p><button class="btn primary" type="button">Réessayer</button>`;
+  t.querySelector("button").onclick=()=>{t.remove();retry();};
+  $("#phone").appendChild(t);return true;
+}
+function clearToast(){const t=document.querySelector(".toast");if(t)t.remove();}
+function go(screen,extra){clearToast();Object.assign(S,{screen,msg:null,opened:false,confirm:null},extra||{});render();scr.scrollTop=0;}
+
+function render(){
+  const r={home,pwNew:pwNew,pwBack:pwBack,gift,admin}[S.screen];
+  scr.innerHTML=r();
+  bind();
+}
+function home(){
+  const c=countdown();
+  const players=drawDone()?`<div class="players">${PLAYERS.map((p,i)=>`<button class="btn player" type="button" data-p="${p}"><span class="badge" style="background:${COLORS[i]}">${p[0]}</span>${p}<span class="arrow">▶</span></button>`).join("")}</div>`
+    :`<div class="shadow"><div class="panel"><p>Le tirage n'est pas encore fait. Reviens un peu plus tard !</p></div></div>`;
+  return`<h1>Secret santa de Noël</h1>
+  <div class="shadow"><div class="panel">
+    <p>Cette année, chacun offre un cadeau à une personne tirée au sort. Chut : personne ne sait qui lui offre le sien !</p>
+    ${c?`<div class="date"><p><strong>Rendez-vous le 25 décembre à midi.</strong></p><p class="countdown">${c}</p></div>`:""}
+  </div></div>
+  <h2 class="who">Qui es-tu ?</h2>${players}`;
+}
+function locked(){const u=S.lockUntil[S.who];return u&&u>Date.now();}
+function pwNew(){
+  return`<p class="hello">Bonjour ${esc(S.who)} !</p>
+  <div class="shadow"><div class="panel">
+    <p>C'est ta première visite. Choisis un mot de passe : il te servira à revoir ton tirage plus tard.</p>
+    <p>Prends-en un simple, facile à retenir : le nom d'un animal, d'une ville, d'un plat.</p>
+    <form id="f" class="field" novalidate>
+      <label for="pw">Ton mot de passe</label>
+      <input id="pw" type="text" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" value="${esc(S.typed)}">
+      ${S.msg?`<p class="error" role="alert">${S.msg}</p>`:""}
+      <button class="btn primary" type="submit">Valider</button>
+    </form>
+  </div></div>
+  <button class="link" type="button" data-act="notme">Ce n'est pas moi</button>`;
+}
+function pwBack(){
+  return`<p class="hello">Bonjour ${esc(S.who)} !</p>
+  <div class="shadow"><div class="panel">
+    <form id="f" class="field" novalidate>
+      <label for="pw">Ton mot de passe</label>
+      <input id="pw" type="text" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false">
+      <p class="hint">Majuscules ou minuscules : peu importe.</p>
+      ${S.msg?`<p class="error" role="alert">${S.msg}</p>`:""}
+      <button class="btn primary" type="submit">Voir mon tirage</button>
+    </form>
+  </div></div>
+  <button class="link" type="button" data-act="notme">Ce n'est pas moi</button>`;
+}
+const LID=["...KK......KK...","..KGGK....KGGK..","..KGGGK..KGGGK..","...KGGGKKGGGK...","KKKKKKKGGKKKKKKK","KRRRRRRGGRRRRRRK","KRWRRRRGGRRRRRDK","KKKKKKKGGKKKKKKK"];
+const BOX=[".KRRRRRGGRRRRRK.",".KRWRRRGGRRRRDK.",".KRRRRRGGRRRRDK.",".KRRRRRGGRRRRDK.",".KRRRRRGGRRRRDK.",".KRRRRRGGRRRRDK.",".KRRRRRGGRRRDDK.",".KKKKKKKKKKKKKK."];
+const PAL={K:"#141a2e",R:"#c8283c",D:"#8f1526",G:"#ffc83d",W:"#ff8a96"};
+function px(rows,oy){let o="";rows.forEach((r,y)=>[...r].forEach((c,x)=>{if(PAL[c])o+=`<rect x="${x}" y="${y+oy}" width="1.02" height="1.02" fill="${PAL[c]}"/>`;}));return o;}
+function gift(){
+  const svg=`<svg viewBox="0 0 16 16" shape-rendering="crispEdges" aria-hidden="true"><g>${px(BOX,8)}</g><g class="lid" style="transform-origin:2px 12px">${px(LID,0)}</g></svg>`;
+  if(!S.opened)return`<div class="gift-wrap" style="margin-top:20px">
+    <p class="hello">${esc(S.who)}</p>
+    <p class="lead">Ton tirage est dans ce paquet.</p>
+    <button class="giftbtn idle" type="button" id="gift" aria-label="Ouvrir le paquet">${svg}</button>
+    <p class="lead"><strong>Touche le paquet pour l'ouvrir.</strong></p></div>`;
+  return`<div class="gift-wrap" style="margin-top:8px">
+    <div class="giftbtn open" style="width:150px;cursor:default">${svg}</div>
+    <div class="shadow" style="width:100%"><div class="panel reveal">
+      <p class="to">Tu offres ton cadeau à</p>
+      <p class="name">${esc(FAKE_DRAW[S.who])}</p>
+      <p>Garde le secret jusqu'au 25 décembre !</p>
+    </div></div>
+    <button class="btn plain" type="button" data-act="home">Retour à l'accueil</button></div>`;
+}
+function admin(){
+  const head=`<p class="admin-tag">ADRESSE À PART · AUCUN LIEN N'Y MÈNE</p><h1 style="font-size:1.8rem">Page réservée</h1>`;
+  if(!S.admin)return`${head}<div class="shadow"><div class="panel"><form id="fa" class="field" novalidate>
+      <label for="apw">Mot de passe d'administration</label>
+      <input id="apw" type="password" autocomplete="off">
+      ${S.adminMsg?`<p class="error" role="alert">${S.adminMsg}</p>`:""}
+      <button class="btn primary" type="submit">Entrer</button></form></div></div>`;
+  const note=`<p class="hint">Les tirages ne s'affichent jamais ici, pas même le tien.</p>`;
+  if(S.confirm==="draw")return`${head}<div class="shadow"><div class="panel">
+      <p><strong>Faire le tirage maintenant ? Il ne pourra pas être refait.</strong></p>
+      <div class="actions"><button class="btn danger" type="button" data-act="dodraw">Faire le tirage</button><button class="btn plain" type="button" data-act="cancel">Annuler</button></div></div></div>`;
+  if(!drawDone())return`${head}<div class="shadow"><div class="panel">
+      <p>Le tirage n'est pas encore fait.</p>
+      <button class="btn primary" type="button" data-act="askdraw">Faire le tirage</button>${note}</div></div>`;
+  if(S.confirm&&S.confirm.erase){const p=S.confirm.erase;return`${head}<div class="shadow"><div class="panel">
+      <p><strong>Effacer le mot de passe de ${esc(p)} ?</strong></p>
+      <p>${esc(p)} en choisira un nouveau à sa prochaine visite. Son tirage ne change pas.</p>
+      <div class="actions"><button class="btn danger" type="button" data-act="doerase" data-p="${p}">Effacer</button><button class="btn plain" type="button" data-act="cancel">Annuler</button></div></div></div>`;}
+  return`${head}${S.adminMsg?`<p class="ok" role="status">${S.adminMsg}</p>`:""}
+    <div class="shadow"><div class="panel"><h2>Participants</h2><div class="list">
+    ${PLAYERS.map(p=>{const on=!!S.pw[p];return`<div class="row"><span class="n">${p}</span><span class="st${on?" on":""}">${on?"Mot de passe choisi":"Pas encore de mot de passe"}</span>${on?`<button class="btn danger" type="button" data-act="askerase" data-p="${p}">Effacer le mot de passe</button>`:""}</div>`;}).join("")}
+    </div>${note}</div></div>`;
+}
+function bind(){
+  scr.querySelectorAll("[data-p].player").forEach(b=>b.onclick=()=>{const p=b.dataset.p;const act=()=>go(S.pw[p]?"pwBack":"pwNew",{who:p,typed:""});if(!down(act))act();});
+  scr.querySelectorAll("[data-act]").forEach(b=>b.onclick=()=>action(b.dataset.act,b.dataset.p));
+  const f=$("#f");if(f){const i=$("#pw");setTimeout(()=>i&&i.focus({preventScroll:true}),30);f.onsubmit=e=>{e.preventDefault();submitPw(i.value);};}
+  const fa=$("#fa");if(fa)fa.onsubmit=e=>{e.preventDefault();const v=$("#apw").value;const act=()=>{if(S.adminFails>=5){S.adminMsg="Beaucoup d'essais ratés : attends une minute avant de réessayer.";render();return;}if(!v.trim()){S.adminFails++;S.adminMsg="Ce n'est pas le bon mot de passe.";render();return;}S.admin=true;S.adminFails=0;S.adminMsg=null;render();};if(!down(act))act();};
+  const g=$("#gift");if(g)g.onclick=()=>{const act=()=>{if($("#ctl-motion").checked){S.opened=true;render();return;}g.classList.remove("idle");g.classList.add("shake");setTimeout(()=>{g.classList.add("open");burst(g);},500);setTimeout(()=>{S.opened=true;render();},1000);};if(!down(act))act();};
+}
+function burst(el){
+  const box=el.getBoundingClientRect(),ph=$("#phone").getBoundingClientRect();
+  const cols=["#ffc83d","#c8283c","#1f7a4d","#9fd0ff","#ffffff"];
+  for(let i=0;i<26;i++){const c=document.createElement("span");c.className="confetti";c.style.background=cols[i%cols.length];
+    c.style.left=(box.left-ph.left+box.width/2)+"px";c.style.top=(box.top-ph.top+box.height*.35)+"px";
+    const a=Math.random()*Math.PI*2,d=70+Math.random()*110;c.style.setProperty("--dx",Math.cos(a)*d+"px");c.style.setProperty("--dy",(Math.sin(a)*d-60)+"px");
+    $("#phone").appendChild(c);setTimeout(()=>c.remove(),1200);}
+}
+function submitPw(v){
+  const act=()=>{
+    const p=S.who;
+    if(S.screen==="pwNew"){
+      if(v.trim().length<4){S.typed=v;S.msg="Il faut au moins 4 lettres ou chiffres.";render();return;}
+      S.pw[p]=v.trim();go("gift");return;
+    }
+    if(locked()){S.msg="Beaucoup d'essais ratés : attends une minute avant de réessayer.";render();return;}
+    if(norm(v)===norm(S.pw[p])){S.fails[p]=0;go("gift");return;}
+    S.fails[p]=(S.fails[p]||0)+1;
+    if(S.fails[p]>=5){S.lockUntil[p]=Date.now()+60000;S.fails[p]=0;S.msg="Beaucoup d'essais ratés : attends une minute avant de réessayer.";}
+    else S.msg=p==="Yannick"?"Ce n'est pas le bon mot de passe. Réessaie, ou efface-le depuis la page réservée.":"Ce n'est pas le bon mot de passe. Réessaie, ou demande à Yannick de l'effacer : tu en choisiras un nouveau.";
+    render();
+  };
+  if(!down(act))act();
+}
+function action(a,p){
+  if(a==="notme"||a==="home")return go("home",{who:null});
+  const run={
+    askdraw:()=>{S.confirm="draw";render();},
+    dodraw:()=>{$("#ctl-draw").checked=true;S.confirm=null;S.adminMsg="Tirage fait.";render();},
+    askerase:()=>{S.confirm={erase:p};S.adminMsg=null;render();},
+    doerase:()=>{delete S.pw[p];S.confirm=null;S.adminMsg=`Mot de passe de ${p} effacé.`;render();},
+    cancel:()=>{S.confirm=null;render();}
+  }[a];
+  if(!run)return;
+  if((a==="dodraw"||a==="doerase")&&down(run))return;
+  run();
+}
+$("#ctl-date").onchange=()=>{if(S.screen==="home")render();};
+$("#ctl-draw").onchange=()=>{if(S.screen!=="home"&&S.screen!=="admin")go("home",{who:null});else render();};
+$("#ctl-home").onclick=()=>go("home",{who:null});
+$("#ctl-admin").onclick=()=>go("admin",{admin:false,adminMsg:null});
+$("#ctl-reset").onclick=()=>{$("#ctl-draw").checked=true;$("#ctl-down").checked=false;$("#ctl-date").value="2026-11-22";S=fresh();render();};
+render();
+
+/* pixel snow */
+const cv=$("#snow"),cx=cv.getContext("2d");let flakes=[];
+const still=matchMedia("(prefers-reduced-motion: reduce)").matches;
+function size(){cv.width=innerWidth;cv.height=innerHeight;flakes=Array.from({length:Math.round(innerWidth*innerHeight/9000)},()=>({x:Math.random()*innerWidth,y:Math.random()*innerHeight,s:2+Math.floor(Math.random()*3)*2,v:.25+Math.random()*.6}));paint();}
+function paint(){cx.clearRect(0,0,cv.width,cv.height);cx.fillStyle="rgba(233,241,255,.55)";flakes.forEach(f=>cx.fillRect(Math.round(f.x),Math.round(f.y),f.s,f.s));}
+function tick(){flakes.forEach(f=>{f.y+=f.v;f.x+=Math.sin(f.y/40)*.2;if(f.y>innerHeight){f.y=-6;f.x=Math.random()*innerWidth;}});paint();requestAnimationFrame(tick);}
+addEventListener("resize",size);size();if(!still)requestAnimationFrame(tick);
+})();
+</script>
+</body>
+</html>
