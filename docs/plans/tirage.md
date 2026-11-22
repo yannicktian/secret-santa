@@ -65,14 +65,7 @@ sans eux.
   pas). L'orchestrateur relance ensuite `vercel git connect`. Débloque : 6, donc la mise
   en production à chaque fusion.
 - **B. Poser le mot de passe d'administration** en production, de type sensible, sans le
-  donner à personne : depuis les réglages du projet sur le site de Vercel, ou dans un
-  terminal, depuis un dossier relié au projet :
-
-  ```sh
-  npx vercel env add ADMIN_PASSWORD production --sensitive
-  ```
-
-  La CLI demande la valeur (commande non essayée). Débloque : 13.
+  donner à personne, comme le dit [deploiement.md](../deploiement.md#poser-le-mot-de-passe-dadministration). Débloque : 13.
 
 Constat humain à la fin (tâche 13) : ouvrir la page réservée de la production avec le mot
 de passe d'administration, voir les sept participants « Pas encore de mot de passe », choisir son propre mot de passe de participant et ouvrir son paquet, puis envoyer le lien.
