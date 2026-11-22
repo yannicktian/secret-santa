@@ -85,7 +85,8 @@ Toutes répondent en JSON avec `Cache-Control: no-store`. Chaque fichier de `api
 une fonction par méthode HTTP, à la signature Web de Vercel :
 `export async function POST(request) { … return Response.json(…) }`. Les appels `POST`
 exigent `Content-Type: application/json` (sinon 415) et un corps de 2 Ko au plus (sinon
-413). Un identifiant de participant inconnu donne 400 `unknown_participant`.
+413). Un identifiant de participant inconnu donne 400 `unknown_participant` ; un mot de
+passe qui n'est pas du texte, 400 `invalid_password`, sans rien écrire ni compter d'essai.
 
 | Appel | Corps | Réponses |
 |---|---|---|
