@@ -80,10 +80,10 @@ async function attempt(path, body) {
  * `waiting()` is true.
  * @param {string} path
  * @param {unknown} body
- * @param {() => boolean} [isCurrent] From `turn()`: once the screen has changed, no banner.
+ * @param {() => boolean} isCurrent From `turn()`: once the screen has changed, no banner.
  * @returns {Promise<{ status: number, data: any }>}
  */
-export function call(path, body, isCurrent = () => true) {
+export function call(path, body, isCurrent) {
   return new Promise((resolve) => {
     const run = async () => {
       const pending = { isCurrent };
