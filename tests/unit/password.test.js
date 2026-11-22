@@ -16,12 +16,12 @@ test("case, accents and spaces at the ends do not count", async () => {
 });
 
 test("another password does not match", async () => {
-  const hash = await hashPassword("Noël");
-  assert.equal(await verifyPassword("noelle", hash), false);
+  const hash = await hashPassword("noelle");
+  assert.equal(await verifyPassword("Noël", hash), false);
 });
 
 test("at least 4 characters, spaces at the ends removed", () => {
-  for (const password of ["abc", "  abc  ", "a b"]) {
+  for (const password of ["abc", "  abc  ", "a b", "🎄🎄🎄"]) {
     assert.equal(isLongEnough(password), false, password);
   }
   for (const password of ["abcd", "🎄🎄🎄🎄", "!!!!"]) {
