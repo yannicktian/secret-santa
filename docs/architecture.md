@@ -42,18 +42,18 @@ Téléphone (navigateur)            Vercel (une adresse racine)              Ups
 | `public/countdown.js` | Le compte à rebours de S1, fonction pure de la date du jour à Paris |
 | `public/screens/password.js` | Les écrans du mot de passe : le choisir (S2), le redonner (S3) |
 | `public/screens/gift.js` | L'écran du paquet (S4), paquet en pixels et ouverture |
-| `public/reservee.html`, `public/reserved.js` | La page réservée (S6), servie à `/reservee` |
+| `public/reservee.html`, `public/reserved.js` | La page réservée (S6, S8), servie à `/reservee` |
 | `api/participant.js` | `POST /api/participant` : le participant a-t-il un mot de passe ? |
 | `api/choose-password.js` | `POST /api/choose-password` : choisir son mot de passe, faire le tirage s'il n'existe pas, donner le prénom tiré (S2, S7) |
 | `api/open-gift.js` | `POST /api/open-gift` : redonner son mot de passe et recevoir le prénom tiré (S3) |
-| `api/reserved.js` | `POST /api/reserved` : la page réservée, liste des états et effacement (S6) |
+| `api/reserved.js` | `POST /api/reserved` : la page réservée, liste des états, effacement (S6) et tirage refait (S8) |
 | `api/health.js` | `GET /api/health` : la santé du déploiement, sans lire aucune donnée |
 | `lib/participants.js` | Les sept participants, dans l'ordre du périmètre : identifiant et prénom |
 | `lib/draw.js` | Le tirage : une permutation sans point fixe, tirée au hasard uniforme (S7) |
 | `lib/password.js` | Mot de passe : normalisation, règle des 4 caractères, empreinte scrypt et vérification |
 | `lib/attempts.js` | La règle des 5 essais ratés (S3, S6, D9) |
 | `lib/gift.js` | Les actions du participant : état, choix du mot de passe, ouverture du paquet, tirage fait une seule fois |
-| `lib/reserved.js` | Les actions de la page réservée : vérification du mot de passe d'administration, liste, effacement |
+| `lib/reserved.js` | Les actions de la page réservée : vérification du mot de passe d'administration, liste, effacement, tirage refait |
 | `lib/store.js` | Le stockage : l'interface, sa version Redis (Upstash) et le choix de la version selon l'environnement |
 | `lib/memory-store.js` | Le double en mémoire du stockage, pour les tests et le serveur local |
 | `lib/http.js` | Lecture du corps JSON (taille bornée), réponses JSON en `no-store`, erreurs |
@@ -78,6 +78,7 @@ Le code est en anglais ; ses noms suivent le glossaire :
 | Page réservée | `reserved` (adresse `/reservee`) |
 | Mot de passe d'administration | `adminPassword` (variable `ADMIN_PASSWORD`) |
 | Effacer le mot de passe | `erasePassword` |
+| Refaire le tirage | `redraw` |
 
 ## Les fonctions
 
@@ -93,7 +94,7 @@ passe qui n'est pas du texte, 400 `invalid_password`, sans rien écrire ni compt
 | `POST /api/participant` | `{ participant }` | 200 `{ hasPassword }` |
 | `POST /api/choose-password` | `{ participant, password }` | 200 `{ receiver }` (le prénom tiré) · 422 `too_short` · 409 `already_chosen` · 429 `locked` |
 | `POST /api/open-gift` | `{ participant, password }` | 200 `{ receiver }` · 401 `wrong_password` · 429 `locked` · 409 `no_password` |
-| `POST /api/reserved` | `{ password, action: "list" }` ou `{ password, action: "erase", participant }` | 200 `{ participants: [{ id, name, hasPassword }] }`, dans l'ordre du périmètre · 400 `unknown_action` · 401 `wrong_password` · 429 `locked` · 503 `admin_password_missing` |
+| `POST /api/reserved` | `{ password, action: "list" }`, `{ password, action: "erase", participant }` ou `{ password, action: "redraw" }` | 200 `{ participants: [{ id, name, hasPassword }] }`, dans l'ordre du périmètre · 400 `unknown_action` · 401 `wrong_password` · 429 `locked` · 503 `admin_password_missing` |
 | `GET /api/health` | — | 200 `{ ok: true, store: "redis" \| "memory" \| "missing", reservedPage: true \| false }` |
 
 Les erreurs ont la forme `{ error: "<code>" }`. Toute autre réponse, une erreur 5xx, un
@@ -114,7 +115,9 @@ cours.
    le prénom tiré ; autre mot de passe, essai raté compté et 409 `already_chosen` (l'écran
    passe à « Redonner son mot de passe », champ vide) ; blocage en cours, 429 `locked`.
    Ainsi un mot de passe existant n'est jamais remplacé et ne se devine pas par cet appel.
-5. 200 `{ receiver }`.
+5. Le tirage est relu. S'il n'a pas changé depuis l'étape 2, 200 `{ receiver }` ; sinon, un
+   tirage refait est passé entre les deux, et l'appel reprend à l'étape 2, trois fois au
+   plus (puis 500), sur le nouveau tirage (voir [Refaire le tirage](#refaire-le-tirage-s8)).
 
 ### Redonner son mot de passe (S3)
 
@@ -129,7 +132,9 @@ cours.
    est alors remis à zéro) : 429 `locked`, sans vérifier. Le cinquième écrit le blocage
    avant sa vérification, pour que les essais suivants le voient pendant qu'elle dure.
 4. Le mot de passe est juste : le compteur d'essais est remis à zéro (et le blocage du
-   cinquième retiré), 200 `{ receiver }`.
+   cinquième retiré), puis le tirage est lu : 200 `{ receiver }` ; sans tirage (un tirage
+   refait est en cours, ou s'est arrêté au milieu), 409 `no_password`, comme au 1. Cet
+   appel ne fait jamais de tirage.
 5. Il est faux : au cinquième de suite, le compteur est remis à zéro, le participant reste
    bloqué une minute et la réponse est 429 `locked` (c'est le cinquième essai qui affiche
    « Beaucoup d'essais ratés… », comme dans la maquette) ; sinon 401 `wrong_password`.
@@ -137,14 +142,16 @@ cours.
 Un compte au-delà du cinquième sans blocage, laissé par une fonction arrêtée entre deux
 commandes, bloque une minute et repart de zéro : personne n'est bloqué pour toujours.
 
-### La page réservée (S6)
+### La page réservée (S6, S8)
 
 Chaque appel porte le mot de passe d'administration, comparé à `ADMIN_PASSWORD` tel quel,
 sans normalisation, en temps constant (empreintes SHA-256 des deux, comparées par
 `timingSafeEqual`). La règle des 5 essais s'applique avec l'identifiant `admin`. Si
 `ADMIN_PASSWORD` est absente ou vide, tout appel répond 503 et la page affiche le bandeau
-« Oups… » : la page ne s'ouvre jamais sans mot de passe posé. L'effacement supprime `password:<id>`, `fails:<id>` et `lock:<id>`, et rien d'autre : le tirage ne change pas, et le nouveau mot de passe a ses 5 essais. La réponse ne contient jamais
-de tirage, d'empreinte ni de mot de passe.
+« Oups… » : la page ne s'ouvre jamais sans mot de passe posé. L'effacement supprime `password:<id>`, `fails:<id>` et `lock:<id>`, et rien d'autre : le tirage ne change pas, et le nouveau mot de passe a ses 5 essais. Le tirage refait
+supprime `draw`, puis ces trois clés pour chaque participant (voir
+[Refaire le tirage](#refaire-le-tirage-s8)). Chaque action répond par la liste. La réponse ne
+contient jamais de tirage, d'empreinte ni de mot de passe ; aucune action ne lit `draw`.
 
 ## Données
 
@@ -153,10 +160,10 @@ le client est créé avec `automaticDeserialization: false`, pour que rien ne so
 
 | Clé | Valeur | Durée | Écrite par |
 |---|---|---|---|
-| `draw` | Le tirage, JSON des identifiants : `{"yannick":"christine","lea":"mamet",…}` | Sans fin | `SET draw … NX`, une seule fois |
-| `password:<id>` | L'empreinte : `scrypt$16384$8$1$<sel en base64>$<empreinte en base64>` | Sans fin | `SET … NX` au choix ; `DEL` à l'effacement |
-| `fails:<id>` | Le nombre d'essais de suite depuis le dernier bon (`<id>` d'un participant, ou `admin`) | Sans fin | `INCR` à chaque essai, avant la vérification ; `DEL` à un bon essai, au blocage, à un essai compté pendant un blocage, ou à l'effacement |
-| `lock:<id>` | `1` | 60 secondes | `SET … EX 60` au cinquième essai, avant sa vérification, ou sur un compte au-delà du cinquième ; `DEL` si ce cinquième essai est juste, et à l'effacement |
+| `draw` | Le tirage, JSON des identifiants : `{"yannick":"christine","lea":"mamet",…}` | Sans fin | `SET draw … NX`, une fois par tirage ; `DEL` au tirage refait |
+| `password:<id>` | L'empreinte : `scrypt$16384$8$1$<sel en base64>$<empreinte en base64>` | Sans fin | `SET … NX` au choix ; `DEL` à l'effacement et au tirage refait |
+| `fails:<id>` | Le nombre d'essais de suite depuis le dernier bon (`<id>` d'un participant, ou `admin`) | Sans fin | `INCR` à chaque essai, avant la vérification ; `DEL` à un bon essai, au blocage, à un essai compté pendant un blocage, à l'effacement ou au tirage refait |
+| `lock:<id>` | `1` | 60 secondes | `SET … EX 60` au cinquième essai, avant sa vérification, ou sur un compte au-delà du cinquième ; `DEL` si ce cinquième essai est juste, à l'effacement et au tirage refait |
 
 Seule la production a une base : `secret-santa-kv`, reliée au seul environnement
 Production. Les déploiements de revue (Preview) n'en ont pas (décision V7).
@@ -171,8 +178,35 @@ Production. Les déploiements de revue (Preview) n'en ont pas (décision V7).
 - `getOrCreateDraw(store)` lit `draw` ; s'il manque, fait un tirage et l'écrit par
   `SET draw … NX`. Si deux participants valident au même moment, chacun propose un
   tirage, Redis n'en garde qu'un, et chacun relit celui qui est gardé : il n'y a qu'un
-  tirage (S7). Rien ne le supprime ni ne le réécrit : aucune fonction ne fait `DEL draw`
-  ni `SET draw` sans `NX`.
+  tirage (S7). Aucune fonction ne fait `SET draw` sans `NX` ; seul le tirage refait de la
+  page réservée fait `DEL draw` (S8).
+
+### Refaire le tirage (S8)
+
+`redraw(store)` de `lib/reserved.js` fait `DEL draw`, puis, pour chaque participant,
+`DEL fails:<id>`, `DEL lock:<id>` et `DEL password:<id>`. Le nouveau tirage est fait par le
+prochain choix d'un mot de passe, comme le premier (S7).
+
+**Garantie de concurrence** : qui choisit ou redonne son mot de passe pendant un tirage
+refait garde un mot de passe seulement avec un prénom du tirage gardé. Elle tient à
+l'ordre des écritures, sans transaction :
+
+1. Le tirage refait efface `draw` avant tout mot de passe.
+2. Choisir son mot de passe relit `draw` après avoir écrit ou vérifié l'empreinte, et ne
+   répond que si la valeur est la même que celle d'où vient le prénom ; redonner son mot
+   de passe ne lit `draw` qu'après la vérification.
+3. Si cette dernière lecture précède le `DEL draw` d'un tirage refait, le `DEL password:<id>`
+   de ce tirage refait vient après l'écriture de l'empreinte : le mot de passe est effacé.
+   Si elle le suit, le tirage lu est le nouveau (le prénom en vient), ou il n'y en a pas
+   (choisir reprend sur un nouveau tirage ; redonner répond 409 `no_password`).
+
+Un tirage refait arrêté au milieu laisse des mots de passe sans tirage : redonner répond
+409 `no_password`, choisir fait un nouveau tirage et répond avec lui, et refaire le tirage
+termine le travail. Écartés : un script Lua (`EVAL`) ou `MULTI`/`EXEC`, que
+`@upstash/redis` 1.41.0 offre (`eval`, `multi`), mais que le double en mémoire ne peut pas
+reproduire fidèlement, si bien que la course ne se prouverait pas par les tests ; une
+génération du tirage gardée avec chaque empreinte, qui obligerait chaque lecture d'un mot
+de passe à lire aussi le tirage.
 
 ### Les mots de passe
 
@@ -211,21 +245,21 @@ peut avancer.
   Le mot de passe tapé et le prénom tiré ne vivent que dans des variables, effacées au
   retour à l'accueil.
 - **La page réservée** (`/reservee`) garde le mot de passe d'administration dans une
-  variable de la page, le temps de la visite, pour l'envoyer avec chaque liste et chaque
-  effacement ; le recharger redemande le mot de passe.
+  variable de la page, le temps de la visite, pour l'envoyer avec chaque liste, chaque
+  effacement et chaque tirage refait ; le recharger redemande le mot de passe.
 - **Les mots affichés** sont dans le code de chaque écran, exactement ceux de la spec.
 - **Le style** est celui de la maquette : polices Pixelify Sans et Atkinson Hyperlegible
   chargées depuis Google Fonts, couleurs et boutons de la maquette, un seul thème. Aucun
   attribut `style` ni script en ligne : la politique de sécurité du contenu les refuse.
 - **Le compte à rebours** prend la date du jour à Paris sur l'horloge de l'appareil
   (`Intl.DateTimeFormat` avec `timeZone: "Europe/Paris"`).
-- **Le réseau** : `call(path, body, isCurrent)` de `call.js` fait l'appel ; sur une erreur réseau, une réponse 5xx ou une réponse qui n'arrive pas en 15 secondes, l'écran reste affiché avec le bandeau et « Réessayer », qui refait le même appel ; ce qui était tapé reste dans le champ. Les 15 secondes laissent passer une connexion mobile lente et le démarrage à froid d'une fonction ; un appel abandonné qui a abouti côté serveur est sans risque, car une fonction refaite rend la même réponse ou une erreur gérée par l'écran (T1) ; seul un mauvais mot de passe abandonné puis réessayé compte deux essais ratés. `isCurrent`, rendu par `turn()` de `app.js`, dit si l'écran a changé depuis l'appel : sa réponse est alors ignorée et son bandeau n'est pas montré ; un changement d'écran ou un nouvel appel retire le bandeau d'un appel précédent. Un seul appel à la fois : tant que `waiting()` de `call.js` dit qu'une réponse de l'écran affiché est attendue, un nouvel appui sur son bouton d'envoi (et, sur la page réservée, sur « Effacer » ou « Annuler ») ne fait rien ; un double appui ne compte donc qu'un essai, et la liste de la page réservée montre la dernière réponse reçue. Pendant le bandeau, aucune réponse n'est attendue : le bouton refait l'appel. L'appui sur un prénom de l'accueil, simple lecture, n'est pas gardé : un double appui y fait deux appels `/api/participant`, dont seule la dernière réponse compte.
+- **Le réseau** : `call(path, body, isCurrent)` de `call.js` fait l'appel ; sur une erreur réseau, une réponse 5xx ou une réponse qui n'arrive pas en 15 secondes, l'écran reste affiché avec le bandeau et « Réessayer », qui refait le même appel ; ce qui était tapé reste dans le champ. Les 15 secondes laissent passer une connexion mobile lente et le démarrage à froid d'une fonction ; un appel abandonné qui a abouti côté serveur est sans risque, car une fonction refaite rend la même réponse ou une erreur gérée par l'écran (T1) ; seul un mauvais mot de passe abandonné puis réessayé compte deux essais ratés. `isCurrent`, rendu par `turn()` de `app.js`, dit si l'écran a changé depuis l'appel : sa réponse est alors ignorée et son bandeau n'est pas montré ; un changement d'écran ou un nouvel appel retire le bandeau d'un appel précédent. Un seul appel à la fois : tant que `waiting()` de `call.js` dit qu'une réponse de l'écran affiché est attendue, un nouvel appui sur son bouton d'envoi (et, sur la page réservée, sur « Effacer », « Refaire le tirage » ou « Annuler ») ne fait rien ; un double appui ne compte donc qu'un essai, et la liste de la page réservée montre la dernière réponse reçue. Pendant le bandeau, aucune réponse n'est attendue : le bouton refait l'appel. L'appui sur un prénom de l'accueil, simple lecture, n'est pas gardé : un double appui y fait deux appels `/api/participant`, dont seule la dernière réponse compte.
 
 ## Sécurité
 
 | Ce qui est protégé | Comment |
 |---|---|
-| Le tirage | Il ne sort de la base que par `choose-password` et `open-gift`, une fois le mot de passe vérifié, et seulement le prénom tiré par ce participant. Aucun appel ne donne le tirage en entier, ni qui offre à qui que ce soit. La page réservée n'y a pas accès |
+| Le tirage | Il ne sort de la base que par `choose-password` et `open-gift`, une fois le mot de passe vérifié, et seulement le prénom tiré par ce participant. Aucun appel ne donne le tirage en entier, ni qui offre à qui que ce soit. La page réservée ne le lit jamais : elle peut seulement l'effacer, avec tous les mots de passe (S8) |
 | Les mots de passe des participants | Empreinte scrypt salée, jamais renvoyée ; 5 essais ratés de suite bloquent le participant une minute |
 | Le mot de passe d'administration | Variable d'environnement Vercel posée par Yannick, de type sensible ; aucun agent ne la connaît ; comparée en temps constant ; même règle des 5 essais |
 | Les jetons de la base | Variables posées par l'intégration Upstash, lues seulement par les fonctions ; aucun fichier de `public/` ne les cite |
@@ -323,6 +357,7 @@ d'une base gratuite peu utilisée.
 |---|---|---|
 | Le tirage est uniforme (S7) | `tests/unit/draw.test.js` | 185 400 tirages simulés avec un générateur à graine fixe (100 attendus par tirage possible) : les 1 854 tirages possibles sortent tous, aucun point fixe, et le khi-deux à 1 853 degrés de liberté reste sous 2 142 (probabilité d'un faux échec d'environ trois sur un million). Le même test échoue sur un algorithme biaisé (Sattolo, qui ne fait que des cycles). 1859,8 obtenu sur un prototype, en 0,7 seconde |
 | Un seul tirage (S7) | `tests/unit/gift.test.js` | Deux choix simultanés de deux participants, sur un double dont `get` rend la main avant `setIfAbsent` : un seul `draw` écrit, et les deux reçoivent un prénom de ce tirage |
+| Le tirage refait (S8) | `tests/unit/redraw.test.js` | Tirage, mots de passe, compteurs et blocages effacés, liste en réponse, sans tirage ; mot de passe d'administration et règle des 5 essais. Course forcée sur le double : les commandes d'un tirage refait, coupé en deux blocs (après `DEL draw`, après `DEL password:yannick`, ou d'un seul tenant), placées avant chaque commande d'un choix ou d'un `open-gift` de Yannick ; dans chaque cas, s'il garde un mot de passe, un tirage existe et le prénom répondu est le sien. Le même test échoue sans la relecture du tirage, ou avec les mots de passe effacés avant le tirage |
 | Les essais ratés (S3, S6) | `tests/unit/attempts.test.js` | Horloge avancée : 4 ratés puis 1 bon, compte à zéro ; 5 ratés, blocage, bon mot de passe refusé, débloqué après 60 secondes ; 100 essais simultanés, et 50 envoyés à la suite pendant des vérifications lentes : 5 vérifications au plus ; des essais comptés après la remise à zéro d'un blocage n'ont aucune vérification ; un compte laissé sans blocage ne bloque qu'une minute |
 | Rien de secret n'est envoyé (sûreté) | `tests/securite/fuite.test.js` | Un parcours complet sur le double en mémoire, avec un tirage fictif et des mots de passe témoins ; chaque réponse (pages, scripts, JSON) est cherchée : ni empreinte, ni sel, ni mot de passe, ni `ADMIN_PASSWORD`, ni le tirage d'un autre, ni le tirage entier ; `public/` ne cite aucun nom de variable d'environnement |
 | Les écrans | `tests/e2e/*.spec.js` | Les mots exacts, les états, les tailles (48 et 56 pixels, texte de 20 pixels), 360 pixels sans défilement horizontal, appels interceptés par `page.route` selon le tableau des fonctions ; le parcours complet sans interception |
@@ -395,6 +430,7 @@ sont fictifs.
 | T4 | Le mot de passe d'administration est-il normalisé ? | Non, comparé tel quel ; son champ est masqué, comme dans la maquette |
 | T5 | Quand s'affiche « Beaucoup d'essais ratés… » | Dès le cinquième essai raté, puis à chaque essai pendant la minute, même avec le bon mot de passe |
 | T6 | Longueur maximale | Aucune règle visible ; un corps de plus de 2 Ko est refusé (413), ce qui affiche le bandeau « Oups… » |
+| T7 | Comment tenir la garantie de concurrence de S8 | Par l'ordre des écritures : `draw` effacé avant les mots de passe, et relu par le choix et le retour du mot de passe ([Refaire le tirage](#refaire-le-tirage-s8)) |
 
 ## Hypothèses et ce qui n'est pas conçu
 
@@ -406,5 +442,5 @@ sont fictifs.
 - **Pas de journal** des actions ; les journaux de Vercel ne reçoivent ni mot de passe, ni
   empreinte, ni tirage.
 - **Pas de domaine propre** : l'adresse est celle que Vercel donne au projet.
-- Hors périmètre de la spec, donc non conçu : ajout ou retrait d'un participant, second
-  tirage, autre année. Changer la liste demanderait de vider la base.
+- Hors périmètre de la spec, donc non conçu : ajout ou retrait d'un participant, autre
+  année. Changer la liste demanderait de vider la base.

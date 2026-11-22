@@ -3,7 +3,7 @@ import { once } from "node:events";
 import { createServer } from "node:net";
 import { expect, test } from "@playwright/test";
 
-// The complete journey, without interception: every story of the spec (S1 to S7) is gone
+// The complete journey, without interception: every story of the spec (S1 to S8) is gone
 // through at least once on scripts/dev-server.js and its memory store. The server is started
 // for this run only, on a port of its own, so that no other test shares its store. The
 // passwords, the administration password included, are fictitious.
@@ -362,4 +362,46 @@ test("S4, S7: each one sees the same name at each visit, all from one draw", asy
   expect(receivers).toHaveLength(4);
   expect(new Set(receivers).size).toBe(4);
   for (const [giver, receiver] of Object.entries(drawn)) expect(receiver).not.toBe(giver);
+});
+
+test("S8: Yannick redoes the draw while Léa is on « Redonner »; she chooses again", async ({
+  page,
+  browser,
+}) => {
+  await touch(page, "Léa");
+  await expect(page.getByRole("button", { name: "Voir mon tirage" })).toBeVisible();
+
+  const context = await browser.newContext();
+  const reserved = await context.newPage();
+  await enterReserved(reserved);
+  await reserved.getByRole("button", { name: "Refaire le tirage" }).click();
+  await expect(reserved.getByText("4 personnes ont déjà vu leur tirage.")).toBeVisible();
+  await reserved.getByRole("button", { name: "Refaire le tirage" }).click();
+  await expect(reserved.getByRole("status")).toHaveText(
+    "Tirage refait. Chacun choisira un nouveau mot de passe.",
+  );
+  await expect(reserved.locator(".row .st")).toHaveText(
+    names.map(() => "Pas encore de mot de passe"),
+  );
+  await fits(reserved);
+  await context.close();
+
+  // « Tirage refait pendant une visite »: « Voir mon tirage » leads to S2.
+  expect(await send(page, "houx", "Voir mon tirage")).toBe(409);
+  await expect(page.getByText(firstTime)).toBeVisible();
+  expect(await send(page, "houx", "Valider")).toBe(200);
+  const lea = await openGift(page);
+  expect(names).toContain(lea);
+  expect(lea).not.toBe("Léa");
+
+  // The others start again from their first visit, with a name of the new draw.
+  await touch(page, "Christine");
+  await expect(page.getByText(firstTime)).toBeVisible();
+  expect(await send(page, "givre", "Valider")).toBe(200);
+  const christine = await openGift(page);
+  expect(christine).not.toBe("Christine");
+  expect(christine).not.toBe(lea);
+  await touch(page, "Léa");
+  expect(await send(page, "houx", "Voir mon tirage")).toBe(200);
+  expect(await openGift(page)).toBe(lea);
 });

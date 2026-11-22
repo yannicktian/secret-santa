@@ -1,5 +1,5 @@
-// The page réservée (S6), at /reservee: the administration password, the list of the
-// participants with the state of their password, and its erasing. The administration
+// The page réservée (S6, S8), at /reservee: the administration password, the list of the
+// participants with the state of their password, its erasing, and redoing the draw. The administration
 // password lives in a variable for the visit only, sent with each call (docs/architecture.md,
 // A6); reloading the page asks for it again. Nothing is kept on the device.
 import { call, clearBanner, waiting } from "./call.js";
@@ -152,7 +152,11 @@ function showList(done) {
     element("div", "list", ...rows),
     element("p", "hint", "Les tirages ne s'affichent jamais ici, pas même le tien."),
   );
-  const children = [element("div", "shadow", panel)];
+  const redo = button("btn danger", "Refaire le tirage", showRedrawConfirm);
+  const children = [
+    element("div", "shadow", panel),
+    element("div", "shadow", element("div", "panel", redo)),
+  ];
   if (done) {
     const ok = element("p", "ok", done);
     ok.setAttribute("role", "status");
@@ -189,6 +193,41 @@ function showConfirm(participant) {
       button("btn danger", "Effacer", erase),
       button("btn plain", "Annuler", () => {
         // While the erasing is awaited, the list would not show its answer.
+        if (!waiting()) showList();
+      }),
+    ),
+  );
+  show(element("div", "shadow", panel));
+}
+
+/** The confirmation of redoing the draw, with how many have seen theirs. */
+function showRedrawConfirm() {
+  const redo = async () => {
+    if (waiting()) return;
+    const isCurrent = turn();
+    const answer = await call("/api/reserved", { password, action: "redraw" }, isCurrent);
+    if (isCurrent()) answered(answer, "Tirage refait. Chacun choisira un nouveau mot de passe.");
+  };
+  const seen = participants.filter((participant) => participant.hasPassword).length;
+  const panel = element(
+    "div",
+    "panel",
+    element("p", "", element("strong", "", "Refaire le tirage ?")),
+    element(
+      "p",
+      "",
+      "Tous les mots de passe seront effacés : chacun en choisira un nouveau et découvrira un nouveau tirage.",
+    ),
+  );
+  if (seen === 1) panel.append(element("p", "", "1 personne a déjà vu son tirage."));
+  if (seen > 1) panel.append(element("p", "", `${seen} personnes ont déjà vu leur tirage.`));
+  panel.append(
+    element(
+      "div",
+      "actions",
+      button("btn danger", "Refaire le tirage", redo),
+      button("btn plain", "Annuler", () => {
+        // While the redraw is awaited, the list would not show its answer.
         if (!waiting()) showList();
       }),
     ),

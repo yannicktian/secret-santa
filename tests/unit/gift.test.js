@@ -278,6 +278,6 @@ test("open-gift never makes a draw", async () => {
   const { store } = await setup();
   await choosePassword(store, "lea", "sapin");
   await store.del("draw");
-  await assert.rejects(openGift(store, "lea", "sapin"));
+  await rejectsWith(openGift(store, "lea", "sapin"), 409, "no_password");
   assert.equal(await store.get("draw"), null);
 });

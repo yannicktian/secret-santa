@@ -206,6 +206,12 @@ async function journey() {
   const large = { participant: "lea", password: passwords.lea.repeat(200) };
   assert.equal((await call("large", "/api/open-gift", openGift, large)).status, 413);
 
+  // S8: the draw redone; the answer is the list, all without a password.
+  const redone = await admin(adminPassword, "redraw");
+  assert.equal(redone.status, 200);
+  assert.ok(redone.body.participants.every((/** @type {any} */ p) => !p.hasPassword));
+  assert.equal(await getStore().get("draw"), null);
+
   // S6: 5 wrong administration passwords, then locked even with the right one.
   for (let i = 1; i <= 5; i += 1) {
     assert.equal((await admin(passwords.wrong, "list")).status, i < 5 ? 401 : 429);
