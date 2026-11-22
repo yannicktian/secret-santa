@@ -163,7 +163,7 @@ fonctions marchent en production ; le reste du constat humain suit l'issue #16.
 
 | Point | Se constate |
 |---|---|
-| Redis lu derrière les fonctions | Au constat humain : la page réservée, ouverte avec le mot de passe d'administration, lit les sept `password:<id>` (« Pas encore de mot de passe » partout). L'entrée compte aussi l'essai (`fails:admin`, effacé quand le mot de passe est bon) |
+| Redis lu derrière les fonctions | Au constat humain : la page réservée, ouverte avec le mot de passe d'administration, lit les sept `password:<id>` (« Pas encore de mot de passe » partout après « Refaire le tirage », sinon « Mot de passe choisi » pour Yannick). L'entrée compte aussi l'essai (`fails:admin`, effacé quand le mot de passe est bon) |
 | Redis écrit, et le tirage fait | Au constat humain : le premier mot de passe validé écrit le tirage (`draw`, une seule fois) et l'empreinte du mot de passe (`password:<id>`) ; la page réservée affiche ensuite « Mot de passe choisi » pour ce participant |
 | Le reste des usages | Au premier usage par les participants : leur retour avec « Voir mon tirage », un mot de passe effacé depuis la page réservée, les 5 essais ratés |
 | Quotas gratuits de Vercel et d'Upstash | À l'usage ; non vérifié |

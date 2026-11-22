@@ -11,8 +11,10 @@
    déjà vu son tirage. » (toi) ; sinon, quelqu'un d'autre est déjà venu.
 2. **Le constat de mise en ligne**, étape par étape, dans
    l'[issue #16](https://github.com/yannicktian/secret-santa/issues/16) : la page réservée,
-   ton mot de passe de participant (il fait le vrai tirage), ton paquet, la page réservée à
-   nouveau. Dis-le dans l'issue #16 ; elle se ferme alors.
+   ton mot de passe de participant (il fait le vrai tirage si tu l'as refait), ton paquet, la page réservée à
+   nouveau. Si tu as gardé ton tirage, Yannick y est déjà « Mot de passe choisi » et tu
+   redonnes ton mot de passe (« Voir mon tirage ») : le tirage ne change pas. Dis-le dans
+   l'issue #16 ; elle se ferme alors.
 3. **Envoyer le lien** de l'accueil, et lui seul, aux six autres participants.
 
 ## À confirmer
