@@ -107,7 +107,7 @@ test("/reservee asks for the administration password, in a hidden field", async 
   await expect(field).toHaveAttribute("type", "password");
   await expect(page.getByRole("button", { name: "Entrer" })).toBeVisible();
   expect(calls).toEqual([]);
-  await checkDisplay(page, []);
+  await checkDisplay(page, ["Mot de passe d'administration"]);
   await capture(page, `reservee-mot-de-passe-${testInfo.project.name}`);
 });
 
@@ -155,7 +155,12 @@ test("the list under « Participants », in order, with the state of each", asyn
   }
   await expect(page.getByText(reminder)).toBeVisible();
   expect(calls).toEqual([{ password: adminPassword, action: "list" }]);
-  await checkDisplay(page, [reminder, "Mot de passe choisi", "Pas encore de mot de passe"]);
+  await checkDisplay(page, [
+    reminder,
+    "Mot de passe choisi",
+    "Pas encore de mot de passe",
+    ...names,
+  ]);
   await capture(page, `reservee-liste-${testInfo.project.name}`);
 });
 
