@@ -119,6 +119,7 @@ function render(root, context, back) {
       return;
     }
     const isCurrent = context.turn();
+    error.remove();
     const path = back ? "/api/open-gift" : "/api/choose-password";
     const { data } = await call(path, { participant: participant.id, password }, isCurrent);
     if (!isCurrent()) return;

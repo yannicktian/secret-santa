@@ -164,6 +164,7 @@ test.describe("S2, first time", () => {
     await page.getByRole("button", { name: "Valider" }).click();
     await expect(page.getByLabel("Ton mot de passe")).toHaveCount(0);
     await expect(page.locator("main input")).toHaveCount(0);
+    await expect(page.getByText("Qui es-tu ?")).toHaveCount(0);
     await expect(page.locator("main .btn").first()).toBeVisible();
     expect(writes(calls)).toEqual([
       { path: "/api/choose-password", body: { participant: "lea", password: "Renne" } },
@@ -178,6 +179,7 @@ test.describe("S2, first time", () => {
     await page.getByLabel("Ton mot de passe").fill("Renne");
     await page.getByLabel("Ton mot de passe").press("Enter");
     await expect(page.locator("main input")).toHaveCount(0);
+    await expect(page.getByText("Qui es-tu ?")).toHaveCount(0);
     expect(writes(calls)).toHaveLength(1);
   });
 
@@ -210,6 +212,18 @@ test.describe("S2, first time", () => {
     await page.getByLabel("Ton mot de passe").fill("Renne");
     await page.getByRole("button", { name: "Valider" }).click();
     await expect(page.locator(".error")).toHaveText(locked);
+    await checkLayout(page);
+  });
+
+  test("too_short from the server: the message, and what was typed stays", async ({ page }) => {
+    await openPassword(page, "Léa", {
+      hasPassword: false,
+      choose: [{ status: 422, json: { error: "too_short" } }],
+    });
+    await page.getByLabel("Ton mot de passe").fill("Renne");
+    await page.getByRole("button", { name: "Valider" }).click();
+    await expect(page.locator(".error")).toHaveText(tooShort);
+    await expect(page.getByLabel("Ton mot de passe")).toHaveValue("Renne");
   });
 
   test("site unreachable at « Valider »: banner, « Réessayer » sends again, the field keeps the text", async ({
@@ -225,6 +239,7 @@ test.describe("S2, first time", () => {
     await expect(page.getByLabel("Ton mot de passe")).toHaveValue("Renne");
     await page.getByRole("button", { name: "Réessayer" }).click();
     await expect(page.locator("main input")).toHaveCount(0);
+    await expect(page.getByText("Qui es-tu ?")).toHaveCount(0);
     expect(writes(calls)).toEqual([
       { path: "/api/choose-password", body: { participant: "lea", password: "Renne" } },
       { path: "/api/choose-password", body: { participant: "lea", password: "Renne" } },
@@ -274,6 +289,7 @@ test.describe("S3, back again", () => {
     await openPassword(page, "Yannick", { hasPassword: true });
     await expect(page.getByText(forgotYannick)).toBeVisible();
     await expect(page.getByText(forgot)).toHaveCount(0);
+    await checkLayout(page);
     await capture(page, `mdp-retour-yannick-${testInfo.project.name}`);
   });
 
@@ -285,6 +301,7 @@ test.describe("S3, back again", () => {
     await page.getByLabel("Ton mot de passe").fill("RENNE");
     await page.getByRole("button", { name: "Voir mon tirage" }).click();
     await expect(page.locator("main input")).toHaveCount(0);
+    await expect(page.getByText("Qui es-tu ?")).toHaveCount(0);
     expect(writes(calls)).toEqual([
       { path: "/api/open-gift", body: { participant: "lea", password: "RENNE" } },
     ]);
@@ -345,6 +362,7 @@ test.describe("S3, back again", () => {
     }
     await page.getByRole("button", { name: "Réessayer" }).click();
     await expect(page.locator("main input")).toHaveCount(0);
+    await expect(page.getByText("Qui es-tu ?")).toHaveCount(0);
     expect(writes(calls)).toHaveLength(2);
   });
 });
