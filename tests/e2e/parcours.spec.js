@@ -405,3 +405,35 @@ test("S8: Yannick redoes the draw while Léa is on « Redonner »; she chooses a
   expect(await send(page, "houx", "Voir mon tirage")).toBe(200);
   expect(await openGift(page)).toBe(lea);
 });
+
+test("S1, S8: a home page opened before a redraw shows S3 at once, then corrects itself to S2", async ({
+  page,
+  browser,
+}) => {
+  const states = page.waitForResponse((r) => r.url().endsWith("/api/participants"));
+  await page.goto(`${base}/`);
+  expect((await (await states).json()).hasPassword.lea).toBe(true);
+  await page.evaluate(() => new Promise((resolve) => setTimeout(resolve, 100)));
+
+  const context = await browser.newContext();
+  const reserved = await context.newPage();
+  await enterReserved(reserved);
+  await reserved.getByRole("button", { name: "Refaire le tirage" }).click();
+  await reserved.getByRole("button", { name: "Refaire le tirage" }).click();
+  await expect(reserved.getByRole("status")).toHaveText(
+    "Tirage refait. Chacun choisira un nouveau mot de passe.",
+  );
+  await context.close();
+
+  // The state read before the redraw: S3 at once, without POST /api/participant.
+  /** @type {string[]} */
+  const asked = [];
+  page.on("request", (request) => asked.push(new URL(request.url()).pathname));
+  await page.getByRole("button", { name: "Léa", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Voir mon tirage" })).toBeVisible();
+  expect(await send(page, "houx", "Voir mon tirage")).toBe(409);
+  await expect(page.getByText(firstTime)).toBeVisible();
+  expect(await send(page, "houx", "Valider")).toBe(200);
+  expect(names).toContain(await openGift(page));
+  expect(asked).not.toContain("/api/participant");
+});

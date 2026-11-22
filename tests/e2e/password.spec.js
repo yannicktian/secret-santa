@@ -33,6 +33,8 @@ async function openPassword(page, name, { hasPassword, choose = [], open = [] })
   const calls = [];
   /** @type {Record<string, Answer[]>} */
   const queues = {
+    // The states of the home page unknown: the tap calls POST /api/participant.
+    "/api/participants": ["offline"],
     "/api/participant": [{ json: { hasPassword } }],
     "/api/choose-password": choose,
     "/api/open-gift": open,
@@ -55,7 +57,7 @@ async function openPassword(page, name, { hasPassword, choose = [], open = [] })
 
 /** @param {Call[]} calls */
 function writes(calls) {
-  return calls.filter((c) => c.path !== "/api/participant");
+  return calls.filter((c) => c.path !== "/api/participant" && c.path !== "/api/participants");
 }
 
 /**

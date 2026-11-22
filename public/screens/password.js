@@ -4,7 +4,7 @@ import { call, waiting } from "../call.js";
 /**
  * @typedef {object} PasswordContext
  * @property {{ id: string, name: string }} participant The participant touched on the home page.
- * @property {boolean} hasPassword Answer of POST /api/participant: S3 if true, S2 otherwise.
+ * @property {boolean} hasPassword From POST /api/participants or POST /api/participant: S3 if true, S2 otherwise.
  * @property {() => void} home Comes back to the home page and forgets everything.
  * @property {() => () => boolean} turn To call before each call of call.js, and to give to
  *   call() as its third argument: the function it returns says, once the answer is there,

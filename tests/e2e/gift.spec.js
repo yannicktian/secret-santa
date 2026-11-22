@@ -15,6 +15,9 @@ const back = "Retour à l'accueil";
  * @param {string} receiver
  */
 async function openGift(page, receiver = "Christine") {
+  await page.route("**/api/participants", (route) =>
+    route.fulfill({ json: { hasPassword: { lea: true } } }),
+  );
   await page.route("**/api/participant", (route) => route.fulfill({ json: { hasPassword: true } }));
   await page.route("**/api/open-gift", (route) => route.fulfill({ json: { receiver } }));
   await page.clock.setFixedTime(new Date("2026-11-22T10:00:00+01:00"));

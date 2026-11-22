@@ -3,6 +3,7 @@ import { test } from "node:test";
 import { POST as choosePassword } from "../../api/choose-password.js";
 import { POST as openGift } from "../../api/open-gift.js";
 import { POST as participant } from "../../api/participant.js";
+import { POST as participants } from "../../api/participants.js";
 import { MAX_BODY_BYTES } from "../../lib/http.js";
 import { getStore } from "../../lib/store.js";
 
@@ -66,6 +67,36 @@ test("participant: 200 with hasPassword, before and after the choice", async () 
   assert.deepEqual(await call(participant, { participant: "yannick" }), {
     status: 200,
     body: { hasPassword: true },
+  });
+});
+
+test("participants: 200 with hasPassword of each participant, in the order of the scope", async () => {
+  const ids = ["yannick", "lea", "christine", "guigui", "mamet", "anne", "loulou"];
+  const before = await call(participants, {});
+  assert.equal(before.status, 200);
+  assert.deepEqual(Object.keys(before.body), ["hasPassword"]);
+  assert.deepEqual(Object.keys(before.body.hasPassword), ids);
+  assert.equal(
+    (await call(choosePassword, { participant: "loulou", password: "sapin" })).status,
+    200,
+  );
+  const after = await call(participants, {});
+  assert.equal(after.body.hasPassword.loulou, true);
+  for (const id of ids) {
+    assert.equal(typeof after.body.hasPassword[id], "boolean");
+    assert.equal(
+      after.body.hasPassword[id],
+      (await call(participant, { participant: id })).body.hasPassword,
+    );
+  }
+});
+
+test("participants: 415 without a JSON content type, 413 over 2 KB, 400 for broken JSON", async () => {
+  assert.equal((await call(participants, {}, { "Content-Type": "text/plain" })).status, 415);
+  assert.equal((await call(participants, { pad: "a".repeat(MAX_BODY_BYTES) })).status, 413);
+  assert.deepEqual(await call(participants, "{"), {
+    status: 400,
+    body: { error: "invalid_json" },
   });
 });
 

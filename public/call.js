@@ -62,11 +62,12 @@ function showBanner(retry) {
  * One call: its answer, or null when the site does not answer as the table of the functions
  * says (network cut, 5xx, any other status or body, no answer within `delay`). The delay is
  * an AbortController and a timer, not AbortSignal.timeout, which Safari lacks before 16.
+ * Neither a banner nor `waiting()`: the home page asks the states of the participants by it.
  * @param {string} path
  * @param {unknown} body
  * @returns {Promise<{ status: number, data: any } | null>}
  */
-async function attempt(path, body) {
+export async function attempt(path, body) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), delay);
   try {
