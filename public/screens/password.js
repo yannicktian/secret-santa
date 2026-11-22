@@ -1,5 +1,5 @@
 // The screens of the password: choosing it the first time (S2) and giving it back (S3).
-import { call } from "../call.js";
+import { call, waiting } from "../call.js";
 
 /**
  * @typedef {object} PasswordContext
@@ -113,6 +113,7 @@ function render(root, context, back) {
 
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
+    if (waiting()) return;
     const password = input.value;
     if (!back && !longEnough(password)) {
       show(words.tooShort);

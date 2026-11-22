@@ -2,7 +2,7 @@
 // participants with the state of their password, and its erasing. The administration
 // password lives in a variable for the visit only, sent with each call (docs/architecture.md,
 // A6); reloading the page asks for it again. Nothing is kept on the device.
-import { call, clearBanner } from "./call.js";
+import { call, clearBanner, waiting } from "./call.js";
 
 const root = /** @type {HTMLElement} */ (document.querySelector("main"));
 
@@ -112,6 +112,7 @@ function showForm(message, typed = "") {
   form.append(enter);
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
+    if (waiting()) return;
     const typed = input.value;
     const isCurrent = turn();
     const answer = await call("/api/reserved", { password: typed, action: "list" }, isCurrent);
@@ -167,6 +168,7 @@ function showList(done) {
 function showConfirm(participant) {
   const { id, name } = participant;
   const erase = async () => {
+    if (waiting()) return;
     const isCurrent = turn();
     const body = { password, action: "erase", participant: id };
     const answer = await call("/api/reserved", body, isCurrent);
@@ -185,7 +187,10 @@ function showConfirm(participant) {
       "div",
       "actions",
       button("btn danger", "Effacer", erase),
-      button("btn plain", "Annuler", () => showList()),
+      button("btn plain", "Annuler", () => {
+        // While the erasing is awaited, the list would not show its answer.
+        if (!waiting()) showList();
+      }),
     ),
   );
   show(element("div", "shadow", panel));

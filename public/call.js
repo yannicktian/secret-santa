@@ -6,6 +6,22 @@ const handled = new Set(["too_short", "already_chosen", "no_password", "wrong_pa
 /** @type {HTMLElement | null} */
 let banner = null;
 
+/**
+ * The calls whose answer is awaited, each with the `isCurrent` given to call(): one of the
+ * previous screen does not hold the screen shown.
+ * @type {Set<{ isCurrent: () => boolean }>}
+ */
+const awaited = new Set();
+
+/**
+ * Whether the answer of a call of the screen shown is awaited: a tap that would call again
+ * does nothing then. Not while the banner is shown: nothing is awaited.
+ */
+export function waiting() {
+  for (const { isCurrent } of awaited) if (isCurrent()) return true;
+  return false;
+}
+
 /** Removes the banner, when the screen changes. */
 export function clearBanner() {
   banner?.remove();
@@ -60,7 +76,8 @@ async function attempt(path, body) {
 /**
  * Calls a function of api/ with a JSON body. When the site does not answer, the screen stays
  * as it is with the banner, and « Réessayer » makes the same call again: the promise resolves
- * with the first answer of the table of the functions.
+ * with the first answer of the table of the functions. While an answer is awaited,
+ * `waiting()` is true.
  * @param {string} path
  * @param {unknown} body
  * @param {() => boolean} [isCurrent] From `turn()`: once the screen has changed, no banner.
@@ -69,7 +86,10 @@ async function attempt(path, body) {
 export function call(path, body, isCurrent = () => true) {
   return new Promise((resolve) => {
     const run = async () => {
+      const pending = { isCurrent };
+      awaited.add(pending);
       const answer = await attempt(path, body);
+      awaited.delete(pending);
       if (answer) resolve(answer);
       else if (isCurrent()) showBanner(run);
     };

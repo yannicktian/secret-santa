@@ -200,6 +200,76 @@ test("« Annuler » calls nothing; « Effacer » erases with the password typed"
   await capture(page, `reservee-efface-${testInfo.project.name}`);
 });
 
+/**
+ * Holds the answers of POST /api/reserved for one action for 800 ms, so that a second tap
+ * comes while one is awaited.
+ * @param {import("@playwright/test").Page} page
+ * @param {string} action
+ */
+async function slow(page, action) {
+  await page.route("**/api/reserved", async (route) => {
+    if (route.request().postDataJSON().action === action) {
+      await new Promise((resolve) => setTimeout(resolve, 800));
+    }
+    return route.fallback();
+  });
+}
+
+test("a double tap on « Entrer » makes one call", async ({ page }) => {
+  const calls = await mockReserved(page);
+  await slow(page, "list");
+  await page.goto("/reservee");
+  await page.getByLabel("Mot de passe d'administration").fill(adminPassword);
+  await page.getByRole("button", { name: "Entrer" }).dblclick();
+  await expect(page.getByRole("heading", { name: "Participants" })).toBeVisible();
+  await page.waitForTimeout(1000);
+  expect(calls).toEqual([{ password: adminPassword, action: "list" }]);
+});
+
+test("a double tap on « Effacer » makes one call", async ({ page }) => {
+  const calls = await mockReserved(page);
+  await enter(page);
+  await slow(page, "erase");
+  await page
+    .locator(".row")
+    .nth(1)
+    .getByRole("button", { name: "Effacer le mot de passe" })
+    .click();
+  await page.getByRole("button", { name: "Effacer", exact: true }).dblclick();
+  await expect(page.getByRole("status")).toHaveText("Mot de passe de Léa effacé.");
+  await page.waitForTimeout(1000);
+  expect(calls.slice(1)).toEqual([
+    { password: adminPassword, action: "erase", participant: "lea" },
+  ]);
+});
+
+test("« Annuler » during an erasing: the list shows the answer received", async ({ page }) => {
+  const calls = await mockReserved(page);
+  await enter(page);
+  await slow(page, "erase");
+  const lea = page.locator(".row").nth(1);
+  await lea.getByRole("button", { name: "Effacer le mot de passe" }).click();
+  await page.getByRole("button", { name: "Effacer", exact: true }).click();
+  await page.getByRole("button", { name: "Annuler" }).click();
+  await expect(page.getByRole("status")).toHaveText("Mot de passe de Léa effacé.");
+  await expect(lea.locator(".st")).toHaveText("Pas encore de mot de passe");
+  expect(calls).toHaveLength(2);
+});
+
+test("« Annuler » with the banner comes back to the list without any call", async ({ page }) => {
+  const calls = await mockReserved(page, (n) => (n === 2 ? "abort" : undefined));
+  await enter(page);
+  const mamet = page.locator(".row").nth(4);
+  await mamet.getByRole("button", { name: "Effacer le mot de passe" }).click();
+  await page.getByRole("button", { name: "Effacer", exact: true }).click();
+  await expect(page.getByRole("alert")).toContainText(offline);
+  await page.getByRole("button", { name: "Annuler" }).click();
+  await expect(page.getByRole("heading", { name: "Participants" })).toBeVisible();
+  await expect(page.getByRole("alert")).toHaveCount(0);
+  await expect(mamet.locator(".st")).toHaveText("Mot de passe choisi");
+  expect(calls).toHaveLength(2);
+});
+
 test("the page shows neither a draw nor a password", async ({ page }) => {
   await mockReserved(page);
   await enter(page);
