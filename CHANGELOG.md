@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-11-22 · Accueil : indicateur de chargement au toucher d'un prénom
+
+- Petite itération demandée par Yannick : au toucher d'un prénom, son bouton montre trois
+  pixels qui clignotent à la place de sa flèche (immobiles avec « moins d'animations ») et
+  les sept boutons sont désactivés jusqu'à la réponse ; avec « Oups… », ils redeviennent
+  actifs. Un second toucher pendant l'attente n'a donc plus d'effet : les tests où un
+  second prénom remplaçait une réponse tardive sont remplacés. Charger l'état des prénoms
+  dès l'ouverture de l'accueil, pour supprimer l'attente, sera une tâche à part.
+
 ## 2026-11-22 · Architecture et découpage de l'epic 1
 
 - Architecture du site (`docs/architecture.md`) : pages statiques et fonctions Vercel sans

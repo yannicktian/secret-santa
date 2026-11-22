@@ -53,6 +53,11 @@ Critères :
   le compte à rebours ne s'affichent plus.
 - Chaque bouton de participant fait au moins 56 pixels de haut et toute sa surface est
   cliquable.
+- Dès qu'on touche un prénom, son bouton montre un indicateur de chargement en pixels, sans
+  texte, à la place de sa flèche, et les sept boutons sont désactivés jusqu'à la réponse :
+  un second toucher n'a pas d'effet. Avec le réglage « moins d'animations » de l'appareil,
+  l'indicateur ne s'anime pas. Si le site ne répond pas, les boutons redeviennent actifs
+  avec « Oups, le site ne répond pas… ».
 - Aucun lien de l'accueil ne mène à la page réservée.
 
 ### S2 — Choisir son mot de passe, la première fois

@@ -197,21 +197,6 @@ test("« Ce n'est pas moi » comes back home; nothing is kept on the device", as
   expect(await page.evaluate(() => history.length)).toBe(2);
 });
 
-test("a late answer does not replace a newer screen", async ({ page }) => {
-  await page.route("**/api/participant", async (route) => {
-    if (route.request().postDataJSON().participant === "lea") {
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-    }
-    return route.fulfill({ json: { hasPassword: false } });
-  });
-  await page.goto("/");
-  await page.getByRole("button", { name: "Léa" }).click();
-  await page.getByRole("button", { name: "Mamet" }).click();
-  await expect(page.getByText("Bonjour Mamet !")).toBeVisible();
-  await page.waitForTimeout(2000);
-  await expect(page.locator(".hello")).toHaveText("Bonjour Mamet !");
-});
-
 test("after a second failure, the focus is on « Réessayer »", async ({ page }) => {
   await page.route("**/api/participant", (route) => route.abort("internetdisconnected"));
   await page.goto("/");
@@ -220,18 +205,107 @@ test("after a second failure, the focus is on « Réessayer »", async ({ page }
   await expect(page.getByRole("button", { name: "Réessayer" })).toBeFocused();
 });
 
-test("a late failure does not show the banner on a newer screen", async ({ page }) => {
+/**
+ * Holds the answers of POST /api/participant: each call fails or waits for `release()`.
+ * @param {import("@playwright/test").Page} page
+ * @param {(attempt: number) => boolean} fails
+ */
+async function holdAnswers(page, fails = () => false) {
+  /** @type {unknown[]} */
+  const calls = [];
+  /** @type {() => void} */
+  let release = () => {};
   await page.route("**/api/participant", async (route) => {
-    if (route.request().postDataJSON().participant === "lea") {
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-      return route.abort("internetdisconnected");
-    }
+    calls.push(route.request().postDataJSON());
+    if (fails(calls.length)) return route.abort("internetdisconnected");
+    await new Promise((resolve) => {
+      release = () => resolve(undefined);
+    });
     return route.fulfill({ json: { hasPassword: false } });
   });
+  await page.clock.setFixedTime(new Date("2026-11-22T10:00:00+01:00"));
   await page.goto("/");
+  return { calls, release: () => release() };
+}
+
+/**
+ * Checks that the seven buttons are disabled and that only `name` shows the indicator, with
+ * its accessible name unchanged.
+ * @param {import("@playwright/test").Page} page
+ * @param {string} name
+ */
+async function expectLoading(page, name) {
+  const buttons = page.locator(".player");
+  for (const [i, other] of names.entries()) {
+    await expect(buttons.nth(i)).toHaveAttribute("aria-disabled", "true");
+    await expect(buttons.nth(i)).toHaveAccessibleName(other);
+    if (other === name) await expect(buttons.nth(i)).toHaveAttribute("aria-busy", "true");
+    else await expect(buttons.nth(i)).not.toHaveAttribute("aria-busy");
+  }
+  // The arrow of the button tapped gives way to the three pixels of its ::before.
+  const shown = await page.locator(".player[aria-busy] .arrow").evaluate((element) => ({
+    arrow: getComputedStyle(element).fontSize,
+    pixels: getComputedStyle(element, "::before").width,
+  }));
+  expect(shown).toEqual({ arrow: "0px", pixels: "8px" });
+}
+
+/** @param {import("@playwright/test").Page} page */
+async function expectActive(page) {
+  for (const button of await page.locator(".player").all()) {
+    await expect(button).not.toHaveAttribute("aria-disabled", "true");
+    await expect(button).not.toHaveAttribute("aria-busy");
+  }
+}
+
+test("while the answer is awaited: indicator, seven buttons disabled, a second tap ignored", async ({
+  page,
+}, testInfo) => {
+  const { calls, release } = await holdAnswers(page);
   await page.getByRole("button", { name: "Léa" }).click();
+  await expectLoading(page, "Léa");
+  await capture(page, `accueil-chargement-${testInfo.project.name}`);
+  await page.getByRole("button", { name: "Mamet" }).click({ force: true });
+  await page.getByRole("button", { name: "Léa" }).click({ force: true });
+  await expectLoading(page, "Léa");
+  expect(calls).toEqual([{ participant: "lea" }]);
+  release();
+  await expect(page.getByText("Bonjour Léa !")).toBeVisible();
+  expect(calls).toEqual([{ participant: "lea" }]);
+});
+
+test("network error: banner and active buttons; « Réessayer » waits again", async ({ page }) => {
+  const { calls, release } = await holdAnswers(page, (attempt) => attempt === 1);
+  await page.getByRole("button", { name: "Léa" }).click();
+  await expect(page.getByRole("alert")).toContainText(offline);
+  await expectActive(page);
+  await page.getByRole("button", { name: "Réessayer" }).click();
+  await expectLoading(page, "Léa");
+  release();
+  await expect(page.getByText("Bonjour Léa !")).toBeVisible();
+  expect(calls).toEqual([{ participant: "lea" }, { participant: "lea" }]);
+});
+
+test("after the banner, another first name can be tapped", async ({ page }) => {
+  const { calls, release } = await holdAnswers(page, (attempt) => attempt === 1);
+  await page.getByRole("button", { name: "Léa" }).click();
+  await expect(page.getByRole("alert")).toContainText(offline);
   await page.getByRole("button", { name: "Mamet" }).click();
-  await expect(page.getByText("Bonjour Mamet !")).toBeVisible();
-  await page.waitForTimeout(2000);
   await expect(page.getByRole("alert")).toHaveCount(0);
+  await expectLoading(page, "Mamet");
+  release();
+  await expect(page.getByText("Bonjour Mamet !")).toBeVisible();
+  expect(calls).toEqual([{ participant: "lea" }, { participant: "mamet" }]);
+});
+
+test("with fewer animations, the indicator does not move", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  const { release } = await holdAnswers(page);
+  await page.getByRole("button", { name: "Léa" }).click();
+  await expectLoading(page, "Léa");
+  const animation = await page
+    .locator(".player[aria-busy] .arrow")
+    .evaluate((element) => getComputedStyle(element, "::before").animationName);
+  expect(animation).toBe("none");
+  release();
 });
