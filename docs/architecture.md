@@ -244,7 +244,7 @@ cinq fois ; qui choisit le prénom d'un autre à sa première visite voit son ti
   `vercel.json` sert `public/` (`outputDirectory`), sans commande de build, avec
   `cleanUrls` pour que `/reservee` serve `reservee.html`.
 - **Production** : chaque fusion sur `main` est déployée par l'intégration Git de Vercel,
-  une fois le projet relié au repo. Variables : celles de l'intégration Upstash (base
+  le projet étant relié au repo. Variables : celles de l'intégration Upstash (base
   `secret-santa-kv`), `ADMIN_PASSWORD`.
 - **Revue (Preview)** : chaque branche poussée, sans base ni `ADMIN_PASSWORD`, derrière
   l'authentification de Vercel : seules les pages statiques et `api/health.js` y

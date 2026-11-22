@@ -188,14 +188,15 @@
 <section>
   <h2>Hébergement et déploiement</h2>
   <ul>
-    <li><strong>Vercel</strong>, offre gratuite, projet <code>secret-santa</code> sur le compte <code>yannicktians-projects</code>, relié au repo, une seule adresse. Node.js 24, fonctions dans la région de la base (région par défaut de l'intégration, relevée par la tâche 6). <code>vercel.json</code> sert <code>public/</code> sans build, avec <code>cleanUrls</code> pour <code>/reservee</code>.</li>
+    <li><strong>Vercel</strong>, offre gratuite, projet <code>secret-santa</code> sur le compte <code>yannicktians-projects</code>, relié au repo, une seule adresse. Node.js 24, fonctions en <code>sfo1</code>, la région de la base (région par défaut de l'intégration, non choisie). <code>vercel.json</code> sert <code>public/</code> sans build, avec <code>cleanUrls</code> pour <code>/reservee</code>.</li>
     <li><strong>Production</strong> : chaque fusion sur <code>main</code>. Variables : celles de l'intégration Upstash, <code>ADMIN_PASSWORD</code>.</li>
-    <li><strong>Revue</strong> : chaque branche poussée, sans base ni mot de passe d'administration : seules les pages et <code>api/health</code> y marchent. Écrans et fonctions se prouvent par les tests, sur le double en mémoire.</li>
+    <li><strong>Revue</strong> : chaque branche poussée, sans base ni mot de passe d'administration, derrière l'authentification de Vercel : seules les pages et <code>api/health</code> y marchent. Écrans et fonctions se prouvent par les tests, sur le double en mémoire.</li>
     <li><strong>Sur la production, les agents ne font que lire sans donnée</strong> : <code>GET /</code>, <code>GET /reservee</code>, <code>GET /api/health</code>. Jamais <code>choose-password</code>, <code>open-gift</code> ni <code>reserved</code> : un mot de passe choisi par un agent ferait le vrai tirage.</li>
     <li><strong>Jeton</strong> : la CLI Vercel avec <code>VERCEL_TOKEN</code>, chargé depuis <code>~/.config/secret-santa/vercel.env</code>, jamais affiché.</li>
   </ul>
   <p><strong>Constaté</strong> le 22 novembre 2026 : le projet existe, la base est reliée à la seule production avec les variables ci-dessus, et l'offre gratuite d'Upstash n'accepte qu'une base.</p>
-  <p><strong>Non vérifié</strong> : la signature Web des fonctions sans framework, <code>outputDirectory</code> et <code>cleanUrls</code>, <code>VERCEL_ENV</code> à l'exécution, la région de la base (tâche 6) ; Redis derrière les fonctions, que seule la production montre (lu au constat humain de la tâche 13, écrit au premier mot de passe choisi) ; les quotas, la conservation d'une base gratuite peu utilisée.</p>
+  <p><strong>Constaté</strong> sur le premier déploiement de production, le 22 novembre 2026 : la signature Web des fonctions sans framework, <code>outputDirectory</code> et <code>cleanUrls</code>, la région de la base (détail dans <a href="https://github.com/yannicktian/secret-santa/blob/main/docs/deploiement.md#constats">docs/deploiement.md</a>).</p>
+  <p><strong>Non vérifié</strong> : <code>VERCEL_ENV</code> à l'exécution, qu'aucune fonction ne renvoie ; Redis derrière les fonctions, que seule la production montre (lu au constat humain de la tâche 13, écrit au premier mot de passe choisi) ; les quotas, la conservation d'une base gratuite peu utilisée.</p>
 </section>
 
 <section>
