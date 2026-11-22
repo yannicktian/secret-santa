@@ -104,7 +104,7 @@ function showList(done) {
       element("span", participant.hasPassword ? "st on" : "st", state),
     );
     if (participant.hasPassword) {
-      row.append(button("btn danger", "Effacer le mot de passe", () => showConfirm(participant)));
+      row.append(button("btn danger", "Effacer le mot de passe", () => showEraseConfirm(participant)));
     }
     return row;
   });
@@ -162,7 +162,7 @@ function showConfirmation({ question, texts, confirm, body, done }) {
  * The confirmation of an erasing.
  * @param {Participant} participant
  */
-function showConfirm(participant) {
+function showEraseConfirm(participant) {
   const { id, name } = participant;
   showConfirmation({
     question: `Effacer le mot de passe de ${name} ?`,

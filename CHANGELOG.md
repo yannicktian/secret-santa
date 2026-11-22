@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-11-22 · Refacto de l'epic 1
+
+- Sans comportement changé, tests inchangés. Serveur (PR #46) : les clés des essais ratés
+  écrites seulement par `lib/attempts.js`, une seule lecture des mots de passe choisis, une
+  seule recherche d'un participant (`lib/participants.js`). Écrans (PR #47) : `element()`
+  et `button()` dans `public/dom.js`, `turn()` et le changement d'écran dans
+  `public/call.js`, une seule confirmation sur la page réservée, CSS inutilisé retiré.
+- Défaut d'outillage trouvé, laissé à une issue : le port des tests e2e est commun à tous
+  les worktrees (#48).
+
 ## 2026-11-22 · Epic 1 — Le tirage
 
 - Le site du secret santa, en production : accueil, mot de passe choisi à la première
