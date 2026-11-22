@@ -81,11 +81,11 @@
     <tr><td><code>public/countdown.js</code></td><td>Le compte à rebours, à l'heure de Paris</td></tr>
     <tr><td><code>public/screens/password.js</code></td><td>Choisir son mot de passe (S2), le redonner (S3)</td></tr>
     <tr><td><code>public/screens/gift.js</code></td><td>Le paquet (S4)</td></tr>
-    <tr><td><code>public/reservee.html</code>, <code>public/reserved.js</code></td><td>La page réservée (S6), à <code>/reservee</code></td></tr>
+    <tr><td><code>public/reservee.html</code>, <code>public/reserved.js</code></td><td>La page réservée (S6, S8), à <code>/reservee</code></td></tr>
     <tr><td><code>api/participant.js</code></td><td>Le participant a-t-il un mot de passe ?</td></tr>
     <tr><td><code>api/choose-password.js</code></td><td>Choisir son mot de passe, faire le tirage s'il n'existe pas, donner le prénom tiré (S2, S7)</td></tr>
     <tr><td><code>api/open-gift.js</code></td><td>Redonner son mot de passe et recevoir le prénom tiré (S3)</td></tr>
-    <tr><td><code>api/reserved.js</code></td><td>La page réservée : liste des états, effacement (S6)</td></tr>
+    <tr><td><code>api/reserved.js</code></td><td>La page réservée : liste des états, effacement (S6), tirage refait (S8)</td></tr>
     <tr><td><code>api/health.js</code></td><td>La santé du déploiement, sans lire aucune donnée</td></tr>
     <tr><td><code>lib/participants.js</code></td><td>Les sept participants, dans l'ordre</td></tr>
     <tr><td><code>lib/draw.js</code></td><td>Le tirage, au hasard uniforme (S7)</td></tr>
@@ -99,7 +99,7 @@
     <tr><td><code>vercel.json</code>, <code>.github/workflows/check.yml</code></td><td>Dossier servi, adresses, en-têtes, région ; intégration continue</td></tr>
   </table></div>
   <h3>Noms du code</h3>
-  <p>Participant : <code>participant</code> (<code>yannick</code>, <code>lea</code>, <code>christine</code>, <code>guigui</code>, <code>mamet</code>, <code>anne</code>, <code>loulou</code>) · tirage : <code>draw</code>, la personne à qui on offre : <code>receiver</code> · mot de passe : <code>password</code>, son empreinte : <code>passwordHash</code> · paquet : <code>gift</code> · page réservée : <code>reserved</code> · mot de passe d'administration : <code>adminPassword</code> (<code>ADMIN_PASSWORD</code>) · effacer le mot de passe : <code>erasePassword</code>.</p>
+  <p>Participant : <code>participant</code> (<code>yannick</code>, <code>lea</code>, <code>christine</code>, <code>guigui</code>, <code>mamet</code>, <code>anne</code>, <code>loulou</code>) · tirage : <code>draw</code>, la personne à qui on offre : <code>receiver</code> · mot de passe : <code>password</code>, son empreinte : <code>passwordHash</code> · paquet : <code>gift</code> · page réservée : <code>reserved</code> · mot de passe d'administration : <code>adminPassword</code> (<code>ADMIN_PASSWORD</code>) · effacer le mot de passe : <code>erasePassword</code> · refaire le tirage : <code>redraw</code>.</p>
 </section>
 
 <section>
@@ -110,7 +110,7 @@
     <tr><td><code>POST /api/participant</code></td><td><code>{ participant }</code></td><td>200 <code>{ hasPassword }</code></td></tr>
     <tr><td><code>POST /api/choose-password</code></td><td><code>{ participant, password }</code></td><td>200 <code>{ receiver }</code> · 422 <code>too_short</code> · 409 <code>already_chosen</code> · 429 <code>locked</code></td></tr>
     <tr><td><code>POST /api/open-gift</code></td><td><code>{ participant, password }</code></td><td>200 <code>{ receiver }</code> · 401 <code>wrong_password</code> · 429 <code>locked</code> · 409 <code>no_password</code></td></tr>
-    <tr><td><code>POST /api/reserved</code></td><td><code>{ password, action: "list" }</code> ou <code>"erase"</code> avec <code>participant</code></td><td>200 <code>{ participants: [{ id, name, hasPassword }] }</code> · 400 · 401 · 429 · 503</td></tr>
+    <tr><td><code>POST /api/reserved</code></td><td><code>{ password, action: "list" }</code>, <code>"erase"</code> avec <code>participant</code>, ou <code>"redraw"</code></td><td>200 <code>{ participants: [{ id, name, hasPassword }] }</code> · 400 · 401 · 429 · 503</td></tr>
     <tr><td><code>GET /api/health</code></td><td>—</td><td>200 <code>{ ok, store, reservedPage }</code></td></tr>
   </table></div>
   <p>Toute autre réponse, une erreur 5xx, un réseau coupé ou aucune réponse en 15 secondes fait afficher « Oups, le site ne répond pas… » sur l'écran en cours.</p>
@@ -120,17 +120,18 @@
       <li>Le tirage est lu ; s'il n'existe pas, il est fait et écrit une seule fois. Avant le mot de passe, pour qu'une coupure ne laisse pas un mot de passe sans paquet.</li>
       <li>L'empreinte n'est écrite que si le participant n'en a pas (<code>SET … NX</code>).</li>
       <li>S'il en avait déjà une : même mot de passe, le prénom tiré ; autre mot de passe, essai raté compté et 409 <code>already_chosen</code> (l'écran passe à « Redonner ») ; blocage en cours, 429. Un mot de passe n'est jamais remplacé, ni deviné par cet appel.</li>
+      <li>Le tirage est relu : inchangé, le prénom tiré ; changé par un tirage refait entre-temps, l'appel reprend sur le nouveau tirage (trois fois au plus).</li>
     </ol></div>
   <div class="example"><span class="eyebrow">Redonner son mot de passe (S3)</span>
     <ol>
       <li>Pas de mot de passe (effacé entre-temps) : 409 <code>no_password</code>, sans compter d'essai, l'écran passe à « Choisir ». L'effacement retire aussi le blocage.</li>
       <li>Participant bloqué : 429 <code>locked</code>, sans vérifier, même le bon.</li>
       <li>Essai compté avant la vérification (<code>INCR</code> atomique), puis blocage relu : jamais plus de 5 vérifications, même pour des essais simultanés. Au-delà du cinquième, ou blocage posé entre-temps : 429, sans vérifier. Le cinquième pose le blocage avant sa vérification.</li>
-      <li>Juste : compteur à zéro (et blocage du cinquième retiré), le prénom tiré.</li>
+      <li>Juste : compteur à zéro (et blocage du cinquième retiré), puis le tirage est lu : le prénom tiré ; sans tirage (tirage refait en cours ou arrêté au milieu), 409 <code>no_password</code>. Jamais de tirage fait par cet appel.</li>
       <li>Faux : au cinquième de suite, compteur à zéro, blocage d'une minute et 429 (c'est lui qui affiche « Beaucoup d'essais ratés… ») ; sinon 401.</li>
     </ol></div>
-  <div class="example"><span class="eyebrow">La page réservée (S6)</span>
-    <p>Chaque appel porte le mot de passe d'administration, comparé tel quel à <code>ADMIN_PASSWORD</code>, en temps constant ; même règle des 5 essais, avec l'identifiant <code>admin</code>. Sans <code>ADMIN_PASSWORD</code>, tout appel répond 503 : la page ne s'ouvre jamais sans mot de passe posé. L'effacement supprime l'empreinte, le compteur d'essais et le blocage du participant, et rien d'autre. Jamais de tirage, d'empreinte ni de mot de passe dans la réponse.</p></div>
+  <div class="example"><span class="eyebrow">La page réservée (S6, S8)</span>
+    <p>Chaque appel porte le mot de passe d'administration, comparé tel quel à <code>ADMIN_PASSWORD</code>, en temps constant ; même règle des 5 essais, avec l'identifiant <code>admin</code>. Sans <code>ADMIN_PASSWORD</code>, tout appel répond 503 : la page ne s'ouvre jamais sans mot de passe posé. L'effacement supprime l'empreinte, le compteur d'essais et le blocage du participant, et rien d'autre. Le tirage refait supprime le tirage, puis ces trois clés pour chaque participant. Chaque action répond par la liste ; jamais de tirage, d'empreinte ni de mot de passe dans la réponse, et aucune action ne lit le tirage.</p></div>
 </section>
 
 <section>
@@ -138,17 +139,26 @@
   <p>Une seule base Redis de production. Valeurs en chaînes, client créé avec <code>automaticDeserialization: false</code> et <code>enableAutoPipelining: false</code>.</p>
   <div class="table"><table>
     <tr><th>Clé</th><th>Valeur</th><th>Durée</th><th>Écrite par</th></tr>
-    <tr><td><code>draw</code></td><td>JSON des identifiants, par exemple fictif <code>{"yannick":"christine",…}</code></td><td>Sans fin</td><td><code>SET … NX</code>, une fois</td></tr>
-    <tr><td><code>password:&lt;id&gt;</code></td><td><code>scrypt$16384$8$1$&lt;sel&gt;$&lt;empreinte&gt;</code></td><td>Sans fin</td><td><code>SET … NX</code> ; <code>DEL</code> à l'effacement</td></tr>
-    <tr><td><code>fails:&lt;id&gt;</code></td><td>Essais de suite depuis le dernier bon (participant ou <code>admin</code>)</td><td>Sans fin</td><td><code>INCR</code> à chaque essai, avant la vérification ; <code>DEL</code> au bon essai, au blocage, à un essai compté pendant un blocage, ou à l'effacement</td></tr>
-    <tr><td><code>lock:&lt;id&gt;</code></td><td><code>1</code></td><td>60 secondes</td><td><code>SET … EX 60</code> au cinquième essai, avant sa vérification, ou sur un compte au-delà du cinquième ; <code>DEL</code> si ce cinquième est juste, et à l'effacement</td></tr>
+    <tr><td><code>draw</code></td><td>JSON des identifiants, par exemple fictif <code>{"yannick":"christine",…}</code></td><td>Sans fin</td><td><code>SET … NX</code>, une fois par tirage ; <code>DEL</code> au tirage refait</td></tr>
+    <tr><td><code>password:&lt;id&gt;</code></td><td><code>scrypt$16384$8$1$&lt;sel&gt;$&lt;empreinte&gt;</code></td><td>Sans fin</td><td><code>SET … NX</code> ; <code>DEL</code> à l'effacement et au tirage refait</td></tr>
+    <tr><td><code>fails:&lt;id&gt;</code></td><td>Essais de suite depuis le dernier bon (participant ou <code>admin</code>)</td><td>Sans fin</td><td><code>INCR</code> à chaque essai, avant la vérification ; <code>DEL</code> au bon essai, au blocage, à un essai compté pendant un blocage, à l'effacement ou au tirage refait</td></tr>
+    <tr><td><code>lock:&lt;id&gt;</code></td><td><code>1</code></td><td>60 secondes</td><td><code>SET … EX 60</code> au cinquième essai, avant sa vérification, ou sur un compte au-delà du cinquième ; <code>DEL</code> si ce cinquième est juste, à l'effacement et au tirage refait</td></tr>
   </table></div>
   <p>Seule la production a une base : <code>secret-santa-kv</code>, reliée au seul environnement Production. Les déploiements de revue n'en ont pas (décision V7).</p>
   <h3>Le tirage</h3>
   <ul>
     <li>Mélange de Fisher-Yates avec <code>crypto.randomInt</code>, recommencé tant que quelqu'un se tire lui-même : chacun des 1 854 tirages possibles pour sept participants a la même chance, paires réciproques comprises. 2,7 mélanges en moyenne.</li>
-    <li>Lu, et s'il manque, proposé et écrit par <code>SET draw … NX</code> : si deux personnes valident en même temps, Redis n'en garde qu'un, et chacune relit celui-là. Rien ne le supprime ni ne le réécrit.</li>
+    <li>Lu, et s'il manque, proposé et écrit par <code>SET draw … NX</code> : si deux personnes valident en même temps, Redis n'en garde qu'un, et chacune relit celui-là. Jamais réécrit ; seul le tirage refait de la page réservée le supprime.</li>
   </ul>
+  <h3>Refaire le tirage (S8)</h3>
+  <p>Le tirage est supprimé, puis l'empreinte, le compteur et le blocage de chaque participant ; le nouveau tirage est fait au prochain choix d'un mot de passe, comme le premier.</p>
+  <p><strong>Garantie de concurrence</strong>, par l'ordre des écritures, sans transaction, sur une base sans région de lecture : qui choisit ou redonne son mot de passe pendant un tirage refait garde un mot de passe seulement avec un prénom du tirage gardé.</p>
+  <ol>
+    <li>Le tirage refait efface le tirage avant tout mot de passe.</li>
+    <li>Choisir relit le tirage après avoir écrit ou vérifié l'empreinte, et ne répond que s'il n'a pas changé ; redonner ne lit le tirage qu'après la vérification.</li>
+    <li>Lu avant l'effacement du tirage : le mot de passe est effacé ensuite. Lu après : c'est le nouveau tirage, ou aucun (choisir reprend sur un nouveau tirage, redonner répond 409).</li>
+  </ol>
+  <p>Un tirage refait arrêté au milieu se termine en le refaisant. Écartés : un script Lua ou <code>MULTI</code>/<code>EXEC</code>, que le client offre, mais que le double en mémoire ne reproduit pas fidèlement, donc non prouvables par les tests.</p>
   <h3>Les mots de passe</h3>
   <ul>
     <li><strong>Normalisation</strong> : espaces au bout retirés, accents retirés (NFD, marques <code>\p{M}</code>), minuscules : « Noël », « noel » et « NOEL » donnent <code>noel</code>.</li>
@@ -168,7 +178,7 @@
     <li>Le style de la maquette, polices Pixelify Sans et Atkinson Hyperlegible depuis Google Fonts, un seul thème. Ni attribut <code>style</code> ni script en ligne : la politique de sécurité du contenu les refuse.</li>
     <li>Le compte à rebours prend la date du jour à Paris sur l'horloge de l'appareil.</li>
     <li>Sur une erreur réseau, une réponse 5xx ou une réponse qui n'arrive pas en 15 secondes, l'écran reste, avec le bandeau et « Réessayer », qui refait le même appel ; ce qui était tapé reste. Un appel dont l'écran a changé depuis ne montre ni sa réponse ni son bandeau.</li>
-    <li>Un seul appel à la fois : tant qu'une réponse est attendue, un nouvel appui sur le bouton d'envoi (et, sur la page réservée, sur « Effacer » ou « Annuler ») ne fait rien. Un double appui ne compte qu'un essai ; pendant le bandeau, le bouton refait l'appel. L'appui sur un prénom de l'accueil, simple lecture, n'est pas gardé.</li>
+    <li>Un seul appel à la fois : tant qu'une réponse est attendue, un nouvel appui sur le bouton d'envoi (et, sur la page réservée, sur « Effacer », « Refaire le tirage » ou « Annuler ») ne fait rien. Un double appui ne compte qu'un essai ; pendant le bandeau, le bouton refait l'appel. L'appui sur un prénom de l'accueil, simple lecture, n'est pas gardé.</li>
   </ul>
 </section>
 
@@ -176,7 +186,7 @@
   <h2>Sécurité</h2>
   <div class="table"><table>
     <tr><th>Ce qui est protégé</th><th>Comment</th></tr>
-    <tr><td>Le tirage</td><td>Ne sort que par <code>choose-password</code> et <code>open-gift</code>, mot de passe vérifié, et seulement le prénom tiré par ce participant. Jamais en entier, jamais qui offre à qui. La page réservée n'y a pas accès</td></tr>
+    <tr><td>Le tirage</td><td>Ne sort que par <code>choose-password</code> et <code>open-gift</code>, mot de passe vérifié, et seulement le prénom tiré par ce participant. Jamais en entier, jamais qui offre à qui. La page réservée ne le lit jamais : elle peut seulement l'effacer, avec tous les mots de passe</td></tr>
     <tr><td>Les mots de passe</td><td>Empreinte scrypt salée, jamais renvoyée ; 5 essais ratés de suite bloquent une minute</td></tr>
     <tr><td>Le mot de passe d'administration</td><td>Variable Vercel sensible posée par Yannick ; aucun agent ne la connaît ; temps constant ; 5 essais</td></tr>
     <tr><td>Les jetons de la base</td><td>Posés par l'intégration, lus par les seules fonctions ; aucun fichier de <code>public/</code> ne les cite</td></tr>
@@ -184,7 +194,7 @@
     <tr><td>Le cache</td><td><code>no-store</code> sur les fonctions et les deux pages HTML</td></tr>
   </table></div>
   <p>En-têtes de <code>vercel.json</code> : <code>Content-Security-Policy</code> (<code>default-src 'self'</code>, Google Fonts, <code>frame-ancestors 'none'</code>, <code>base-uri 'none'</code>, <code>form-action 'self'</code>), <code>nosniff</code>, <code>Referrer-Policy: no-referrer</code>, <code>X-Robots-Tag: noindex</code>.</p>
-  <p><strong>Limites acceptées</strong> (« rien n'est très sensible ») : un mot de passe de quatre lettres se devine à 5 essais par minute pour qui s'acharne des jours ; n'importe qui peut bloquer un participant ou la page réservée une minute ; qui touche le prénom d'un autre à sa première visite voit son tirage.</p>
+  <p><strong>Limites acceptées</strong> (« rien n'est très sensible ») : un mot de passe de quatre lettres se devine à 5 essais par minute pour qui s'acharne des jours ; n'importe qui peut bloquer un participant ou la page réservée une minute ; qui touche le prénom d'un autre à sa première visite voit son tirage ; qui détient le mot de passe d'administration peut effacer le mot de passe d'un participant, en choisir un pour lui et voir son tirage, la seule trace étant que la personne retombe sur « C'est ta première visite ». Seul Yannick a ce mot de passe ; il est conseillé de le choisir long (5 essais par minute).</p>
 </section>
 
 <section>
@@ -214,6 +224,7 @@
     <tr><th>Ce qui est prouvé</th><th>Comment</th></tr>
     <tr><td>Le tirage est uniforme</td><td>185 400 tirages simulés à graine fixe : les 1 854 tirages sortent, aucun point fixe, khi-deux sous 2 142 (faux échec : moins d'un sur un million) ; le test échoue sur un algorithme biaisé (Sattolo)</td></tr>
     <tr><td>Un seul tirage</td><td>Deux choix simultanés sur un double qui intercale les appels : un seul tirage écrit</td></tr>
+    <tr><td>Le tirage refait</td><td>Tout est effacé, la liste en réponse, sans tirage ; course forcée sur le double : un tirage refait placé avant chaque commande d'un choix ou d'un retour du mot de passe, coupé ou non : qui garde un mot de passe a le prénom du tirage gardé. Le test échoue sans la relecture du tirage</td></tr>
     <tr><td>Les essais ratés</td><td>Horloge avancée : remise à zéro, blocage, déblocage après 60 secondes ; essais simultanés, ou comptés après la remise à zéro d'un blocage : 5 vérifications au plus ; un compte laissé sans blocage ne bloque qu'une minute</td></tr>
     <tr><td>Rien de secret envoyé</td><td>Un parcours complet avec des mots de passe témoins : aucune réponse ne contient d'empreinte, de sel, de mot de passe, <code>ADMIN_PASSWORD</code>, ni le tirage d'un autre</td></tr>
     <tr><td>Les écrans</td><td>Mots exacts, états, tailles, 360 pixels, appels interceptés ; puis le parcours complet sans interception</td></tr>
@@ -267,6 +278,7 @@
     <tr><td>T4</td><td>Mot de passe d'administration normalisé ?</td><td>Non ; champ masqué, comme la maquette</td></tr>
     <tr><td>T5</td><td>Quand « Beaucoup d'essais ratés… »</td><td>Dès le cinquième raté, puis à chaque essai pendant la minute, même le bon</td></tr>
     <tr><td>T6</td><td>Longueur maximale</td><td>Aucune règle visible ; plus de 2 Ko refusé, bandeau « Oups… »</td></tr>
+    <tr><td>T7</td><td>Garantie de concurrence de S8</td><td>Par l'ordre des écritures : tirage effacé avant les mots de passe, relu par le choix et le retour du mot de passe</td></tr>
   </table></div>
 </section>
 
@@ -277,7 +289,7 @@
     <li>Une seule base, sans sauvegarde : perdue, le tirage le serait aussi. Ce qu'Upstash fait d'une base gratuite peu utilisée n'est pas vérifié.</li>
     <li>Pas de journal des actions ; les journaux de Vercel ne reçoivent ni mot de passe, ni empreinte, ni tirage.</li>
     <li>Pas de domaine propre : l'adresse que Vercel donne.</li>
-    <li>Non conçu, hors périmètre : ajout ou retrait d'un participant, second tirage, autre année.</li>
+    <li>Non conçu, hors périmètre : ajout ou retrait d'un participant, autre année.</li>
   </ul>
 </section>
 </main>

@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-// The page réservée (S6), with POST /api/reserved intercepted as the table of the functions
+// The page réservée (S6, S8), with POST /api/reserved intercepted as the table of the functions
 // of docs/architecture.md says. The administration password is fictitious.
 const adminPassword = "flocon-fictif";
 const names = ["Yannick", "Léa", "Christine", "Guigui", "Mamet", "Anne", "Loulou"];
@@ -11,15 +11,17 @@ const reminder = "Les tirages ne s'affichent jamais ici, pas même le tien.";
 const offline = "Oups, le site ne répond pas. Vérifie ta connexion à internet, puis réessaie.";
 
 /**
- * Intercepts POST /api/reserved with a fictitious state: Yannick, Léa and Mamet have chosen
- * their password. `answer` can replace the answer of one call, by its number from 1.
+ * Intercepts POST /api/reserved with a fictitious state: by default, Yannick, Léa and Mamet
+ * have chosen their password. `answer` can replace the answer of one call, by its number
+ * from 1.
  * @param {import("@playwright/test").Page} page
  * @param {(n: number, body: any) => "abort" | { status: number, json: unknown } | undefined} [answer]
+ * @param {string[]} [initial] The ids of the participants who have chosen their password.
  */
-async function mockReserved(page, answer = () => undefined) {
+async function mockReserved(page, answer = () => undefined, initial = ["yannick", "lea", "mamet"]) {
   /** @type {any[]} */
   const calls = [];
-  const chosen = new Set(["yannick", "lea", "mamet"]);
+  const chosen = new Set(initial);
   await page.route("**/api/reserved", (route) => {
     const body = route.request().postDataJSON();
     calls.push(body);
@@ -30,6 +32,7 @@ async function mockReserved(page, answer = () => undefined) {
       return route.fulfill({ status: 401, json: { error: "wrong_password" } });
     }
     if (body.action === "erase") chosen.delete(body.participant);
+    if (body.action === "redraw") chosen.clear();
     const participants = ids.map((id, i) => ({ id, name: names[i], hasPassword: chosen.has(id) }));
     return route.fulfill({ json: { participants } });
   });
@@ -345,4 +348,125 @@ test("reloading asks for the password again; nothing is kept on the device", asy
   await expect(page.getByLabel("Mot de passe d'administration")).toHaveValue("");
   await expect(page.getByRole("heading", { name: "Participants" })).toHaveCount(0);
   expect(calls).toHaveLength(1);
+});
+
+const redoQuestion = "Refaire le tirage ?";
+const redoExplanation =
+  "Tous les mots de passe seront effacés : chacun en choisira un nouveau et découvrira un nouveau tirage.";
+const redone = "Tirage refait. Chacun choisira un nouveau mot de passe.";
+
+test("« Refaire le tirage » under the list; « Annuler » calls nothing; the redraw", async ({
+  page,
+}, testInfo) => {
+  const calls = await mockReserved(page);
+  await enter(page);
+  const redo = page.getByRole("button", { name: "Refaire le tirage" });
+  await expect(redo).toHaveCount(1);
+  const below = await page
+    .locator(".list")
+    .evaluate(
+      (list, button) => Boolean(list.compareDocumentPosition(/** @type {Node} */ (button)) & 4),
+      await redo.elementHandle(),
+    );
+  expect(below).toBe(true);
+  await redo.click();
+  await expect(page.getByText(redoQuestion, { exact: true })).toBeVisible();
+  await expect(page.getByText(redoExplanation)).toBeVisible();
+  const seen = "3 personnes ont déjà vu leur tirage.";
+  await expect(page.getByText(seen)).toBeVisible();
+  await expect(page.locator("main p")).toHaveText([redoQuestion, redoExplanation, seen]);
+  await expect(page.getByRole("button", { name: "Refaire le tirage" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Annuler" })).toBeVisible();
+  await checkDisplay(page, [redoQuestion, redoExplanation, seen]);
+  await capture(page, `reservee-refaire-confirmation-${testInfo.project.name}`);
+
+  await page.getByRole("button", { name: "Annuler" }).click();
+  await expect(page.getByRole("heading", { name: "Participants" })).toBeVisible();
+  await expect(page.locator(".row").nth(0).locator(".st")).toHaveText("Mot de passe choisi");
+  expect(calls).toHaveLength(1);
+
+  await page.getByRole("button", { name: "Refaire le tirage" }).click();
+  await page.getByRole("button", { name: "Refaire le tirage" }).click();
+  await expect(page.getByRole("status")).toHaveText(redone);
+  await expect(page.locator(".row .st")).toHaveText(names.map(() => "Pas encore de mot de passe"));
+  await expect(page.getByRole("button", { name: "Effacer le mot de passe" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Refaire le tirage" })).toBeVisible();
+  await expect(page.getByText(reminder)).toBeVisible();
+  expect(calls).toEqual([
+    { password: adminPassword, action: "list" },
+    { password: adminPassword, action: "redraw" },
+  ]);
+  await checkDisplay(page, [redone, reminder]);
+  await capture(page, `reservee-refait-${testInfo.project.name}`);
+});
+
+test("the confirmation says « 1 personne… », or nothing when nobody has a password", async ({
+  page,
+}) => {
+  await mockReserved(page, undefined, ["anne"]);
+  await enter(page);
+  await page.getByRole("button", { name: "Refaire le tirage" }).click();
+  await expect(page.locator("main p")).toHaveText([
+    redoQuestion,
+    redoExplanation,
+    "1 personne a déjà vu son tirage.",
+  ]);
+  await page.getByRole("button", { name: "Annuler" }).click();
+  await page
+    .locator(".row")
+    .nth(5)
+    .getByRole("button", { name: "Effacer le mot de passe" })
+    .click();
+  await page.getByRole("button", { name: "Effacer", exact: true }).click();
+  await expect(page.getByRole("status")).toHaveText("Mot de passe de Anne effacé.");
+  await page.getByRole("button", { name: "Refaire le tirage" }).click();
+  await expect(page.locator("main p")).toHaveText([redoQuestion, redoExplanation]);
+});
+
+test("« Refaire le tirage » is there when nobody has a password", async ({ page }) => {
+  const calls = await mockReserved(page, undefined, []);
+  await enter(page);
+  await page.getByRole("button", { name: "Refaire le tirage" }).click();
+  await page.getByRole("button", { name: "Refaire le tirage" }).click();
+  await expect(page.getByRole("status")).toHaveText(redone);
+  expect(calls.at(-1)).toEqual({ password: adminPassword, action: "redraw" });
+});
+
+test("a double tap on « Refaire le tirage » of the confirmation makes one call", async ({
+  page,
+}) => {
+  const calls = await mockReserved(page);
+  await enter(page);
+  await slow(page, "redraw");
+  await page.getByRole("button", { name: "Refaire le tirage" }).click();
+  await page.getByRole("button", { name: "Refaire le tirage" }).dblclick();
+  await expect(page.getByRole("status")).toHaveText(redone);
+  await page.waitForTimeout(1000);
+  expect(calls.slice(1)).toEqual([{ password: adminPassword, action: "redraw" }]);
+});
+
+test("« Annuler » during a redraw: the list shows the answer received", async ({ page }) => {
+  const calls = await mockReserved(page);
+  await enter(page);
+  await slow(page, "redraw");
+  await page.getByRole("button", { name: "Refaire le tirage" }).click();
+  await page.getByRole("button", { name: "Refaire le tirage" }).click();
+  await page.getByRole("button", { name: "Annuler" }).click();
+  await expect(page.getByRole("status")).toHaveText(redone);
+  expect(calls).toHaveLength(2);
+});
+
+test("network cut at the redraw: banner, « Réessayer » makes the same call", async ({ page }) => {
+  const calls = await mockReserved(page, (n) => (n === 2 ? "abort" : undefined));
+  await enter(page);
+  await page.getByRole("button", { name: "Refaire le tirage" }).click();
+  await page.getByRole("button", { name: "Refaire le tirage" }).click();
+  await expect(page.getByRole("alert")).toContainText(offline);
+  await expect(page.getByText(redoQuestion, { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Réessayer" }).click();
+  await expect(page.getByRole("status")).toHaveText(redone);
+  expect(calls.slice(1)).toEqual([
+    { password: adminPassword, action: "redraw" },
+    { password: adminPassword, action: "redraw" },
+  ]);
 });
