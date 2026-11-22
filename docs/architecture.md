@@ -155,7 +155,7 @@ le client est créé avec `automaticDeserialization: false`, pour que rien ne so
 | `draw` | Le tirage, JSON des identifiants : `{"yannick":"christine","lea":"mamet",…}` | Sans fin | `SET draw … NX`, une seule fois |
 | `password:<id>` | L'empreinte : `scrypt$16384$8$1$<sel en base64>$<empreinte en base64>` | Sans fin | `SET … NX` au choix ; `DEL` à l'effacement |
 | `fails:<id>` | Le nombre d'essais de suite depuis le dernier bon (`<id>` d'un participant, ou `admin`) | Sans fin | `INCR` à chaque essai, avant la vérification ; `DEL` à un bon essai, au blocage, à un essai compté pendant un blocage, ou à l'effacement |
-| `lock:<id>` | `1` | 60 secondes | `SET … EX 60` au cinquième essai, avant sa vérification, ou sur un compte au-delà du cinquième sans blocage ; `DEL` si ce cinquième essai est juste, et à l'effacement |
+| `lock:<id>` | `1` | 60 secondes | `SET … EX 60` au cinquième essai, avant sa vérification, ou sur un compte au-delà du cinquième ; `DEL` si ce cinquième essai est juste, et à l'effacement |
 
 Seule la production a une base : `secret-santa-kv`, reliée au seul environnement
 Production. Les déploiements de revue (Preview) n'en ont pas (décision V7).

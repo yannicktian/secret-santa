@@ -141,7 +141,7 @@
     <tr><td><code>draw</code></td><td>JSON des identifiants, par exemple fictif <code>{"yannick":"christine",…}</code></td><td>Sans fin</td><td><code>SET … NX</code>, une fois</td></tr>
     <tr><td><code>password:&lt;id&gt;</code></td><td><code>scrypt$16384$8$1$&lt;sel&gt;$&lt;empreinte&gt;</code></td><td>Sans fin</td><td><code>SET … NX</code> ; <code>DEL</code> à l'effacement</td></tr>
     <tr><td><code>fails:&lt;id&gt;</code></td><td>Essais de suite depuis le dernier bon (participant ou <code>admin</code>)</td><td>Sans fin</td><td><code>INCR</code> à chaque essai, avant la vérification ; <code>DEL</code> au bon essai, au blocage, à un essai compté pendant un blocage, ou à l'effacement</td></tr>
-    <tr><td><code>lock:&lt;id&gt;</code></td><td><code>1</code></td><td>60 secondes</td><td><code>SET … EX 60</code> au cinquième essai, avant sa vérification, ou sur un compte au-delà du cinquième sans blocage ; <code>DEL</code> si ce cinquième est juste, et à l'effacement</td></tr>
+    <tr><td><code>lock:&lt;id&gt;</code></td><td><code>1</code></td><td>60 secondes</td><td><code>SET … EX 60</code> au cinquième essai, avant sa vérification, ou sur un compte au-delà du cinquième ; <code>DEL</code> si ce cinquième est juste, et à l'effacement</td></tr>
   </table></div>
   <p>Seule la production a une base : <code>secret-santa-kv</code>, reliée au seul environnement Production. Les déploiements de revue n'en ont pas (décision V7).</p>
   <h3>Le tirage</h3>
