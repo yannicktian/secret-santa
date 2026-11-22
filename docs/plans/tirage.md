@@ -34,7 +34,7 @@ tâches 1, 6 et 13, qui sont de lots différents.
 | 3 | Le tirage | 1 | oui |
 | 4 | Mots de passe des participants | 1 | oui |
 | 5 | Accueil, style et site injoignable | 1 | non |
-| 6 | Premier déploiement | 1, prérequis A | non (doc) |
+| 6 | Premier déploiement | 1, prérequis A | oui (`vercel.json`, si la région change) |
 | 7 | Fonctions du participant | 2, 3, 4 | oui |
 | 8 | Fonction de la page réservée | 2, 3 | oui |
 | 9 | Écrans du mot de passe | 5 | non |
@@ -43,7 +43,7 @@ tâches 1, 6 et 13, qui sont de lots différents.
 | 12 | Parcours complet et test de fuite | 7, 8, 9, 10, 11 | oui |
 | 13 | Mise en ligne | 6, 12, prérequis B | non (doc) |
 
-Les chemins sensibles sont groupés dans les tâches du serveur (1 à 4, 7, 8, 12) ; les
+Les chemins sensibles sont groupés dans les tâches du serveur (1 à 4, 7, 8, 12) et, pour la seule région de `vercel.json`, la tâche 6 ; les
 écrans (5, 9, 10, 11) n'en touchent aucun. Les restrictions du projet fusionnent les unes
 comme les autres après relecture, sans attendre un humain.
 
@@ -75,8 +75,7 @@ sans eux.
   La CLI demande la valeur (commande non essayée). Débloque : 13.
 
 Constat humain à la fin (tâche 13) : ouvrir la page réservée de la production avec le mot
-de passe d'administration, voir les sept participants « Pas encore de mot de passe »,
-puis envoyer le lien.
+de passe d'administration, voir les sept participants « Pas encore de mot de passe », choisir son propre mot de passe de participant et ouvrir son paquet, puis envoyer le lien.
 
 ## 1. Socle, contrôles et santé du déploiement
 
@@ -146,14 +145,13 @@ puis envoyer le lien.
 
 ## 5. Accueil, style et site injoignable
 
-- **Fichiers** : `public/index.html`, `public/style.css`, `public/app.js`,
+- **Fichiers** : `public/index.html`, `public/style.css` (le style de tous les écrans de la maquette, page réservée comprise : les tâches 9 à 11 ne le modifient pas), `public/call.js`, `public/app.js`,
   `public/countdown.js`, et les écrans d'attente `public/screens/password.js` et
   `public/screens/gift.js` (« Bonjour <prénom> ! » et « Ce n'est pas moi » seuls), que les
   tâches 9 et 10 remplacent.
 - **Tests** : `tests/unit/countdown.test.js` : « Plus que 33 jours ! » le 22 novembre 2026,
   « Plus que 2 jours ! » le 23 décembre, « C'est demain ! » le 24, « C'est aujourd'hui ! »
-  le 25, rien le 26 ; le 24 décembre à 23 h 30 à Paris (22 h 30 UTC) donne « C'est
-  demain ! ». `tests/e2e/home.spec.js`, appels interceptés : l'ordre des éléments de S1 et
+  le 25, rien le 26 ; la fonction reçoit l'instant (`Date`) : le 25 décembre à 0 h 30 à Paris (24 décembre, 23 h 30 UTC) donne « C'est aujourd'hui ! », et le 26 décembre à 0 h 30 à Paris (25 décembre, 23 h 30 UTC) rien. `tests/e2e/home.spec.js`, appels interceptés : l'ordre des éléments de S1 et
   leurs mots exacts ; les sept boutons, dans l'ordre, d'au moins 56 pixels, cliquables sur
   toute leur surface ; titre, présentation et « Qui es-tu ? » dans 360 × 640 ; aucun
   lien vers `/reservee` ; sans défilement horizontal à 360 pixels ; texte courant d'au
@@ -167,14 +165,12 @@ puis envoyer le lien.
 
 ## 6. Premier déploiement
 
-- **Fichiers** : `docs/deploiement.md` (relier le dossier par `vercel link`, version fixée
-  de la CLI, variables attendues, ce qui a été constaté), `README.md` (adresse de
-  production), `docs/architecture.md` seulement si un constat la contredit, signalé dans
+- **Fichiers** : `docs/deploiement.md` (relier le dossier par `vercel link` sans tirer les variables : ni `vercel env pull`, ni `.env.local` ; version fixée de la CLI, noms des variables attendues, ce qui a été constaté), `README.md` (adresse de production), `vercel.json` (la région, si celle de la base diffère), `docs/architecture.md` seulement si un constat la contredit, signalé dans
   la PR.
 - **Tests** : sur le déploiement de production de `main`, fait par l'intégration Git :
   `GET /` sert l'écran de la tâche 1 ou 5, `GET /api/health` répond `store: "redis"` ; les
-  en-têtes de `vercel.json` sont présents ; `GET /package.json` et `GET /lib/store.js`
-  répondent 404 ; la région de la base, relevée sans lire de donnée, est celle de
+  en-têtes de `vercel.json` sont présents ; `GET /package.json` et `GET /lib/http.js`
+  répondent 404 ; la région de la base, relevée sans lire de donnée ni de variable (par la CLI Vercel si elle la donne, sinon demandée à Yannick, qui la lit dans le tableau de bord de Vercel), est celle de
   `vercel.json` (sinon `vercel.json` la prend).
 - **Fini quand** : `docs/deploiement.md` dit, pour chaque point « non vérifié » de
   l'architecture que ce déploiement montre (signature des fonctions, dossier servi,
@@ -206,8 +202,7 @@ puis envoyer le lien.
 - **Tests** : `tests/unit/reserved.test.js` : mauvais mot de passe : `wrong_password`,
   puis `locked` au cinquième, et le bon refusé pendant la minute ; `ADMIN_PASSWORD`
   absente ou vide : 503 ; le mot de passe d'administration n'est pas normalisé (`Admin`
-  ≠ `admin`) ; liste dans l'ordre du périmètre avec `hasPassword` ; effacement : état
-  « pas encore », `draw` inchangé, un participant sans mot de passe reste sans ; action
+  ≠ `admin`) ; liste dans l'ordre du périmètre avec `hasPassword` ; effacement : état « pas encore », `draw` inchangé, `fails:<id>` et `lock:<id>` supprimés (4 ratés, effacement, nouveau choix : 5 ratés de plus avant le blocage), un participant sans mot de passe reste sans ; action
   ou participant inconnus : 400 ; aucune réponse ne contient de tirage, d'empreinte ni
   de mot de passe.
 - **Fini quand** : la fonction ne lit jamais la clé `draw` (vérifié par un double qui
@@ -226,9 +221,7 @@ puis envoyer le lien.
   `wrong_password` vide le champ et affiche « Ce n'est pas le bon mot de passe.
   Réessaie. » ; `locked` affiche « Beaucoup d'essais ratés : attends une minute avant de
   réessayer. » ; `no_password` passe à S2. Clavier simulé (fenêtre de 360 × 340) : champ
-  et bouton visibles sans défiler après le toucher du champ. Réseau coupé à « Valider » et
-  à « Voir mon tirage » : bandeau, « Réessayer » refait l'envoi, le champ garde le texte.
-  Captures de chaque état.
+  et bouton visibles sans défiler après le toucher du champ. Réseau coupé à « Valider » et à « Voir mon tirage » : bandeau, « Réessayer » refait l'envoi, le champ garde le texte. À 360 pixels, dans chaque état : sans défilement horizontal, chaque élément à toucher (« Ce n'est pas moi » compris) d'au moins 48 pixels de côté, chaque bouton d'au moins 56 pixels de haut, texte courant d'au moins 20 pixels ; même rendu en thème sombre. Captures de chaque état.
 - **Fini quand** : les écrans ressemblent à ceux de la maquette, à 360 et 1280 pixels.
 
 ## 10. Écran du paquet
@@ -241,12 +234,12 @@ puis envoyer le lien.
   `reducedMotion: "reduce"`, aucune animation ni attente ; « Retour à l'accueil » revient
   à l'accueil et le prénom n'est plus dans la page ; après retour du navigateur puis
   avant, ou rechargement, l'accueil s'affiche, pas le paquet ; aucune entrée d'historique
-  ajoutée ; aucun texte ne dit qui offre à la personne. Captures fermé et ouvert.
+  ajoutée ; aucun texte ne dit qui offre à la personne. À 360 pixels, fermé et ouvert : sans défilement horizontal, paquet et « Retour à l'accueil » d'au moins 48 pixels de côté, le bouton d'au moins 56 pixels de haut, texte courant d'au moins 20 pixels ; même rendu en thème sombre. Captures fermé et ouvert.
 - **Fini quand** : le paquet en pixels est celui de la maquette.
 
 ## 11. Écrans de la page réservée
 
-- **Fichiers** : `public/reservee.html`, `public/reserved.js`.
+- **Fichiers** : `public/reservee.html`, `public/reserved.js` (appels et bandeau par `public/call.js`).
 - **Tests** : `tests/e2e/reserved.spec.js`, appels interceptés : `/reservee` a pour titre
   « Page réservée », le champ « Mot de passe d'administration », masqué, et « Entrer » ;
   `wrong_password` : « Ce n'est pas le bon mot de passe. » ; `locked` : « Beaucoup
@@ -258,14 +251,13 @@ puis envoyer le lien.
   n'appelle rien ; « Effacer » appelle `erase` avec le mot de passe tapé et affiche
   « Mot de passe de Léa effacé. » et le nouvel état ; « Les tirages ne s'affichent jamais
   ici, pas même le tien. » ; réseau coupé à « Entrer » et à « Effacer » : bandeau et
-  « Réessayer » ; recharger redemande le mot de passe ; aucun stockage. Captures de chaque
-  état.
+  « Réessayer » ; recharger redemande le mot de passe ; aucun stockage. À 360 pixels, dans chaque état : sans défilement horizontal, chaque élément à toucher (« Effacer le mot de passe », « Annuler », « Réessayer » compris) d'au moins 48 pixels de côté, chaque bouton d'au moins 56 pixels de haut, texte courant d'au moins 20 pixels ; même rendu en thème sombre. Captures de chaque état.
 - **Fini quand** : la page ressemble à celle de la maquette, à 360 et 1280 pixels.
 
 ## 12. Parcours complet et test de fuite
 
 - **Fichiers** : `tests/e2e/parcours.spec.js`, `tests/securite/fuite.test.js`.
-- **Tests** : sans interception, sur le double : Léa arrive pour la première fois, choisit
+- **Tests** : sans interception, sur le double, dans le seul projet de 360 pixels, en série, sur un `scripts/dev-server.js` lancé pour ce passage (jamais réutilisé) : Léa arrive pour la première fois, choisit
   « Sapin », ouvre son paquet ; revient, redonne « sapin », même prénom ; Yannick efface
   son mot de passe sur la page réservée ; Léa repasse par S2 avec « houx » et retrouve le
   même prénom ; deux participants qui valident en même temps (deux pages) ont des prénoms
@@ -284,9 +276,7 @@ puis envoyer le lien.
 - **Fini quand** : `docs/deploiement.md` dit ce qui a été constaté en production, et ce
   qui ne le sera qu'au constat humain et au premier usage (Redis lu par la page réservée,
   puis écrit au premier mot de passe choisi) ; aucun agent n'a écrit dans la base.
-- **Constat humain** : Yannick ouvre `/reservee` en production, entre son mot de passe
-  d'administration, voit les sept participants « Pas encore de mot de passe », puis
-  envoie le lien. Le premier participant qui choisit son mot de passe fait le vrai
+- **Constat humain** : Yannick ouvre `/reservee` en production, entre son mot de passe d'administration, voit les sept participants « Pas encore de mot de passe », choisit son propre mot de passe de participant et ouvre son paquet (ce qui fait le vrai tirage), voit « Mot de passe choisi » pour lui sur la page réservée, puis envoie le lien. Le premier participant qui choisit son mot de passe fait le vrai
   tirage.
 
 ## Couverture de la spec

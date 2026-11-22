@@ -76,7 +76,8 @@
     <tr><th>Emplacement</th><th>Rôle</th></tr>
     <tr><td><code>public/index.html</code></td><td>L'accueil et le conteneur des écrans du participant</td></tr>
     <tr><td><code>public/style.css</code></td><td>Le style de tous les écrans, repris de la maquette</td></tr>
-    <tr><td><code>public/app.js</code></td><td>L'état en mémoire, l'accueil (S1), le passage d'un écran à l'autre sans historique (S5), les appels et le bandeau « Oups… » avec « Réessayer »</td></tr>
+    <tr><td><code>public/app.js</code></td><td>L'état en mémoire, l'accueil (S1), le passage d'un écran à l'autre sans historique (S5), les appels par <code>call.js</code></td></tr>
+    <tr><td><code>public/call.js</code></td><td>Les appels et le bandeau « Oups… » avec « Réessayer », pour l'accueil et la page réservée</td></tr>
     <tr><td><code>public/countdown.js</code></td><td>Le compte à rebours, à l'heure de Paris</td></tr>
     <tr><td><code>public/screens/password.js</code></td><td>Choisir son mot de passe (S2), le redonner (S3)</td></tr>
     <tr><td><code>public/screens/gift.js</code></td><td>Le paquet (S4)</td></tr>
@@ -109,7 +110,7 @@
     <tr><td><code>POST /api/participant</code></td><td><code>{ participant }</code></td><td>200 <code>{ hasPassword }</code></td></tr>
     <tr><td><code>POST /api/choose-password</code></td><td><code>{ participant, password }</code></td><td>200 <code>{ receiver }</code> · 422 <code>too_short</code> · 409 <code>already_chosen</code> · 429 <code>locked</code></td></tr>
     <tr><td><code>POST /api/open-gift</code></td><td><code>{ participant, password }</code></td><td>200 <code>{ receiver }</code> · 401 <code>wrong_password</code> · 429 <code>locked</code> · 409 <code>no_password</code></td></tr>
-    <tr><td><code>POST /api/reserved</code></td><td><code>{ password, action: "list" }</code> ou <code>"erase"</code> avec <code>participant</code></td><td>200 <code>{ participants: [{ id, name, hasPassword }] }</code> · 401 · 429</td></tr>
+    <tr><td><code>POST /api/reserved</code></td><td><code>{ password, action: "list" }</code> ou <code>"erase"</code> avec <code>participant</code></td><td>200 <code>{ participants: [{ id, name, hasPassword }] }</code> · 400 · 401 · 429 · 503</td></tr>
     <tr><td><code>GET /api/health</code></td><td>—</td><td>200 <code>{ ok, store, reservedPage }</code></td></tr>
   </table></div>
   <p>Toute autre réponse, une erreur 5xx ou un réseau coupé, fait afficher « Oups, le site ne répond pas… » sur l'écran en cours.</p>
@@ -128,18 +129,18 @@
       <li>Faux : essai compté ; au cinquième de suite, blocage d'une minute et 429 (c'est lui qui affiche « Beaucoup d'essais ratés… ») ; sinon 401.</li>
     </ol></div>
   <div class="example"><span class="eyebrow">La page réservée (S6)</span>
-    <p>Chaque appel porte le mot de passe d'administration, comparé tel quel à <code>ADMIN_PASSWORD</code>, en temps constant ; même règle des 5 essais, avec l'identifiant <code>admin</code>. Sans <code>ADMIN_PASSWORD</code>, tout appel répond 503 : la page ne s'ouvre jamais sans mot de passe posé. L'effacement supprime l'empreinte et rien d'autre. Jamais de tirage, d'empreinte ni de mot de passe dans la réponse.</p></div>
+    <p>Chaque appel porte le mot de passe d'administration, comparé tel quel à <code>ADMIN_PASSWORD</code>, en temps constant ; même règle des 5 essais, avec l'identifiant <code>admin</code>. Sans <code>ADMIN_PASSWORD</code>, tout appel répond 503 : la page ne s'ouvre jamais sans mot de passe posé. L'effacement supprime l'empreinte, le compteur d'essais et le blocage du participant, et rien d'autre. Jamais de tirage, d'empreinte ni de mot de passe dans la réponse.</p></div>
 </section>
 
 <section>
   <h2>Données</h2>
-  <p>Une seule base Redis de production. Valeurs en chaînes, client créé avec <code>automaticDeserialization: false</code>.</p>
+  <p>Une seule base Redis de production. Valeurs en chaînes, client créé avec <code>automaticDeserialization: false</code> et <code>enableAutoPipelining: false</code>.</p>
   <div class="table"><table>
     <tr><th>Clé</th><th>Valeur</th><th>Durée</th><th>Écrite par</th></tr>
     <tr><td><code>draw</code></td><td>JSON des identifiants, par exemple fictif <code>{"yannick":"christine",…}</code></td><td>Sans fin</td><td><code>SET … NX</code>, une fois</td></tr>
     <tr><td><code>password:&lt;id&gt;</code></td><td><code>scrypt$16384$8$1$&lt;sel&gt;$&lt;empreinte&gt;</code></td><td>Sans fin</td><td><code>SET … NX</code> ; <code>DEL</code> à l'effacement</td></tr>
-    <tr><td><code>fails:&lt;id&gt;</code></td><td>Essais ratés de suite (participant ou <code>admin</code>)</td><td>Sans fin</td><td><code>INCR</code> ; <code>DEL</code> au bon essai ou au blocage</td></tr>
-    <tr><td><code>lock:&lt;id&gt;</code></td><td><code>1</code></td><td>60 secondes</td><td><code>SET … EX 60</code> au cinquième raté</td></tr>
+    <tr><td><code>fails:&lt;id&gt;</code></td><td>Essais ratés de suite (participant ou <code>admin</code>)</td><td>Sans fin</td><td><code>INCR</code> ; <code>DEL</code> au bon essai, au blocage ou à l'effacement</td></tr>
+    <tr><td><code>lock:&lt;id&gt;</code></td><td><code>1</code></td><td>60 secondes</td><td><code>SET … EX 60</code> au cinquième raté ; <code>DEL</code> à l'effacement</td></tr>
   </table></div>
   <p>Seule la production a une base : <code>secret-santa-kv</code>, reliée au seul environnement Production. Les déploiements de revue n'en ont pas (décision V7).</p>
   <h3>Le tirage</h3>
@@ -203,7 +204,7 @@
     <li><code>npm run check</code> : Biome (lint et format), <code>tsc</code> (JavaScript vérifié par JSDoc, strict), <code>node --test</code>.</li>
     <li><code>npm run test:e2e</code> : Playwright (Chromium) contre le serveur local sur le double en mémoire, à 360 et 1280 pixels ; avec <code>CAPTURES=1</code>, les captures dans <code>captures/</code>, ignoré par git.</li>
     <li>Pas de build. Intégration continue GitHub Actions à chaque pull request et poussée sur <code>main</code>.</li>
-    <li>Dépendances aux versions exactes : <code>@upstash/redis</code> 1.41.0 (seule dépendance du site, plus <code>uncrypto</code>), et pour le développement <code>@biomejs/biome</code> 2.6.8, <code>typescript</code> 7.0.2, <code>@types/node</code>, <code>@playwright/test</code> 1.65.1, installées et essayées le 22 novembre 2026.</li>
+    <li>Dépendances aux versions exactes : <code>@upstash/redis</code> 1.41.0 (seule dépendance du site, plus <code>uncrypto</code>), et pour le développement <code>@biomejs/biome</code> 2.6.8, <code>typescript</code> 7.0.2, <code>@types/node</code> 24.19.2, <code>@playwright/test</code> 1.65.1, installées et essayées le 22 novembre 2026.</li>
   </ul>
   <div class="table"><table>
     <tr><th>Ce qui est prouvé</th><th>Comment</th></tr>

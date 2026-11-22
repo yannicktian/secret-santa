@@ -37,7 +37,8 @@ Téléphone (navigateur)            Vercel (une adresse racine)              Ups
 |---|---|
 | `public/index.html` | L'accueil et le conteneur des écrans du participant ; liens vers les polices, `style.css`, `app.js` |
 | `public/style.css` | Le style de tous les écrans, repris de la maquette (`docs/site/epics/1-tirage-maquette.html`), sans les réglages de la maquette |
-| `public/app.js` | L'état en mémoire des écrans du participant, l'accueil (S1), le passage d'un écran à l'autre sans entrée d'historique (S5), l'appel aux fonctions (`call`) et le bandeau « Oups, le site ne répond pas… » avec « Réessayer » |
+| `public/app.js` | L'état en mémoire des écrans du participant, l'accueil (S1), le passage d'un écran à l'autre sans entrée d'historique (S5), les appels par `call.js` |
+| `public/call.js` | L'appel aux fonctions (`call`) et le bandeau « Oups, le site ne répond pas… » avec « Réessayer », repris par `app.js` et `reserved.js` |
 | `public/countdown.js` | Le compte à rebours de S1, fonction pure de la date du jour à Paris |
 | `public/screens/password.js` | Les écrans du mot de passe : le choisir (S2), le redonner (S3) |
 | `public/screens/gift.js` | L'écran du paquet (S4), paquet en pixels et ouverture |
@@ -91,7 +92,7 @@ exigent `Content-Type: application/json` (sinon 415) et un corps de 2 Ko au plus
 | `POST /api/participant` | `{ participant }` | 200 `{ hasPassword }` |
 | `POST /api/choose-password` | `{ participant, password }` | 200 `{ receiver }` (le prénom tiré) · 422 `too_short` · 409 `already_chosen` · 429 `locked` |
 | `POST /api/open-gift` | `{ participant, password }` | 200 `{ receiver }` · 401 `wrong_password` · 429 `locked` · 409 `no_password` |
-| `POST /api/reserved` | `{ password, action: "list" }` ou `{ password, action: "erase", participant }` | 200 `{ participants: [{ id, name, hasPassword }] }`, dans l'ordre du périmètre · 401 `wrong_password` · 429 `locked` |
+| `POST /api/reserved` | `{ password, action: "list" }` ou `{ password, action: "erase", participant }` | 200 `{ participants: [{ id, name, hasPassword }] }`, dans l'ordre du périmètre · 400 `unknown_action` · 401 `wrong_password` · 429 `locked` · 503 `admin_password_missing` |
 | `GET /api/health` | — | 200 `{ ok: true, store: "redis" \| "memory" \| "missing", reservedPage: true \| false }` |
 
 Les erreurs ont la forme `{ error: "<code>" }`. Toute autre réponse, une erreur 5xx ou un
@@ -131,22 +132,20 @@ Chaque appel porte le mot de passe d'administration, comparé à `ADMIN_PASSWORD
 sans normalisation, en temps constant (empreintes SHA-256 des deux, comparées par
 `timingSafeEqual`). La règle des 5 essais s'applique avec l'identifiant `admin`. Si
 `ADMIN_PASSWORD` est absente ou vide, tout appel répond 503 et la page affiche le bandeau
-« Oups… » : la page ne s'ouvre jamais sans mot de passe posé. L'effacement supprime
-`password:<id>` et rien d'autre : le tirage ne change pas. La réponse ne contient jamais
+« Oups… » : la page ne s'ouvre jamais sans mot de passe posé. L'effacement supprime `password:<id>`, `fails:<id>` et `lock:<id>`, et rien d'autre : le tirage ne change pas, et le nouveau mot de passe a ses 5 essais. La réponse ne contient jamais
 de tirage, d'empreinte ni de mot de passe.
 
 ## Données
 
 Une seule base Redis Upstash pour la production. Toutes les valeurs sont des chaînes ;
-le client est créé avec `automaticDeserialization: false`, pour que rien ne soit
-transformé à la lecture.
+le client est créé avec `automaticDeserialization: false`, pour que rien ne soit transformé à la lecture, et `enableAutoPipelining: false`, pour que chaque commande parte en une requête (sinon la version 1.41.0 les regroupe vers `/pipeline`).
 
 | Clé | Valeur | Durée | Écrite par |
 |---|---|---|---|
 | `draw` | Le tirage, JSON des identifiants : `{"yannick":"christine","lea":"mamet",…}` | Sans fin | `SET draw … NX`, une seule fois |
 | `password:<id>` | L'empreinte : `scrypt$16384$8$1$<sel en base64>$<empreinte en base64>` | Sans fin | `SET … NX` au choix ; `DEL` à l'effacement |
-| `fails:<id>` | Le nombre d'essais ratés de suite (`<id>` d'un participant, ou `admin`) | Sans fin | `INCR` à un essai raté ; `DEL` à un bon essai ou au blocage |
-| `lock:<id>` | `1` | 60 secondes | `SET … EX 60` au cinquième essai raté |
+| `fails:<id>` | Le nombre d'essais ratés de suite (`<id>` d'un participant, ou `admin`) | Sans fin | `INCR` à un essai raté ; `DEL` à un bon essai, au blocage ou à l'effacement |
+| `lock:<id>` | `1` | 60 secondes | `SET … EX 60` au cinquième essai raté ; `DEL` à l'effacement |
 
 Seule la production a une base : `secret-santa-kv`, reliée au seul environnement
 Production. Les déploiements de revue (Preview) n'en ont pas (décision V7).
@@ -209,7 +208,7 @@ peut avancer.
   attribut `style` ni script en ligne : la politique de sécurité du contenu les refuse.
 - **Le compte à rebours** prend la date du jour à Paris sur l'horloge de l'appareil
   (`Intl.DateTimeFormat` avec `timeZone: "Europe/Paris"`).
-- **Le réseau** : `call(path, body)` de `app.js` fait l'appel ; sur une erreur réseau ou
+- **Le réseau** : `call(path, body)` de `call.js` fait l'appel ; sur une erreur réseau ou
   une réponse 5xx, l'écran reste affiché avec le bandeau et « Réessayer », qui refait le
   même appel ; ce qui était tapé reste dans le champ.
 
@@ -287,7 +286,7 @@ d'une base gratuite peu utilisée.
   `npx playwright install --with-deps chromium`, `npm run check`, `npm run test:e2e`.
 - **Dépendances**, toutes de développement sauf la première, versions exactes :
   `@upstash/redis` 1.41.0 (une sous-dépendance, `uncrypto`), `@biomejs/biome` 2.6.8,
-  `typescript` 7.0.2, `@types/node`, `@playwright/test` 1.65.1. Installées et essayées sur
+  `typescript` 7.0.2, `@types/node` 24.19.2, `@playwright/test` 1.65.1. Installées et essayées sur
   le serveur de développement le 22 novembre 2026 : `tsc` signale une erreur de type en
   JSDoc, Biome lint des modules ES (`"type": "module"`), Playwright lance Chromium après
   `npx playwright install chromium`, et le client Upstash envoie bien
