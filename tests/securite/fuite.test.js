@@ -256,9 +256,11 @@ function secrets() {
  */
 function checkShape(answer, body) {
   const where = `${answer.label} (${answer.status})`;
+  const headers = JSON.parse(answer.headers).map((/** @type {[string, string]} */ [key]) => key);
+  assert.deepEqual(headers.sort(), ["cache-control", "content-type"], where);
   if (answer.status !== 200) {
     assert.deepEqual(Object.keys(body), ["error"], where);
-    assert.equal(typeof body.error, "string", where);
+    assert.match(body.error, /^[a-z_]+$/, where);
   } else if (answer.path === "/api/participant") {
     assert.deepEqual(Object.keys(body), ["hasPassword"], where);
   } else if (answer.path === "/api/reserved") {
