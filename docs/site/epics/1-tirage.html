@@ -1,0 +1,225 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="claude:viewport-fit-sides" content="cover">
+<title>Epic 1 — Le tirage</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Pixelify+Sans:wght@500;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<nav><a href="../index.html">Accueil</a><a href="1-tirage.html">Epic 1 — Le tirage</a></nav>
+<main>
+<header style="display:flex;flex-direction:column;gap:8px">
+  <span class="eyebrow">Epic <a href="https://github.com/yannicktian/secret-santa/issues/1">#1</a> · spec</span>
+  <h1>Le tirage du secret santa</h1>
+  <p>Le site du secret santa familial du 25 décembre 2026 : chacun dit qui il est, choisit un mot de passe à sa première visite, et découvre à qui il offre son cadeau. Le site fait le tirage tout seul ; Yannick efface un mot de passe oublié depuis la page réservée.</p>
+  <p><a href="#maquette">Essayer la maquette cliquable</a></p>
+  <p class="source">Le Markdown fait foi : <a href="https://github.com/yannicktian/secret-santa/blob/main/docs/specs/tirage.md">docs/specs/tirage.md</a>, et <a href="https://github.com/yannicktian/secret-santa/blob/main/docs/glossaire.md">docs/glossaire.md</a> pour les mots.</p>
+</header>
+
+<section>
+  <h2>Questions auxquelles le site répond</h2>
+  <div class="table"><table>
+    <tr><th>Qui</th><th>Question</th><th>Quand</th></tr>
+    <tr><td>Un participant</td><td>C'est quoi, ce lien, et qu'est-ce que je dois faire ?</td><td>À la première visite</td></tr>
+    <tr><td>Un participant</td><td>À qui j'offre mon cadeau ?</td><td>Une fois, puis quelques fois jusqu'à Noël</td></tr>
+    <tr><td>Un participant</td><td>C'est quand, déjà ?</td><td>À chaque visite</td></tr>
+    <tr><td>Un participant</td><td>J'ai oublié mon mot de passe : comment je revois mon tirage ?</td><td>Rarement</td></tr>
+    <tr><td>Yannick</td><td>Qui n'est pas encore venu voir son tirage ?</td><td>Quelques fois avant Noël</td></tr>
+    <tr><td>Yannick</td><td>Comment remettre quelqu'un sur les rails sans voir son tirage ?</td><td>Quand quelqu'un a oublié son mot de passe</td></tr>
+  </table></div>
+  <p>Aucun écran ne répond à « qui m'offre mon cadeau ? » : c'est le secret.</p>
+</section>
+
+<section>
+  <h2>Le parcours</h2>
+  <div class="example"><span class="eyebrow">Un participant</span>
+    <div class="flow"><span class="step">Accueil · « Qui es-tu ? »</span><span class="arrow">→</span><span class="step">Son prénom</span><span class="arrow">→</span><span class="step">Première fois : choisir son mot de passe<br>Ensuite : le redonner</span><span class="arrow">→</span><span class="step">Le paquet, à ouvrir</span><span class="arrow">→</span><span class="step">Retour à l'accueil</span></div>
+  </div>
+  <div class="example"><span class="eyebrow">Yannick, sur la page réservée</span>
+    <div class="flow"><span class="step">Mot de passe d'administration</span><span class="arrow">→</span><span class="step">Qui a choisi son mot de passe</span><span class="arrow">→</span><span class="step">Effacer un mot de passe oublié</span></div>
+  </div>
+  <p>Sept participants, dans cet ordre partout : Yannick, Léa, Christine, Guigui, Mamet, Anne, Loulou. Une seule adresse, la racine du site. Les participants l'ouvrent sur leur téléphone : le site est conçu pour lui d'abord. Le site ne se souvient de personne d'une visite à l'autre.</p>
+  <p><strong>Hors périmètre</strong> : budget, idées de cadeaux ou liste de souhaits, messages ou rappels envoyés, ajout ou retrait d'un participant, second tirage, autre année.</p>
+</section>
+
+<section>
+  <h2>Les stories</h2>
+  <details open><summary>S1 — L'accueil</summary>
+    <p>La personne ouvre le lien : le site lui dit en deux phrases ce qu'est le secret santa et quand il a lieu, puis lui demande qui elle est.</p>
+    <ul>
+      <li>Dans cet ordre : titre, présentation, date, compte à rebours, « Qui es-tu ? » et un bouton par participant.</li>
+      <li>Compte à rebours en jours, heure de Paris : « Plus que 33 jours ! » le 22 novembre, « Plus que 2 jours ! » le 23 décembre, « C'est demain ! » le 24, « C'est aujourd'hui ! » le 25. Dès le 26, la date et le compte à rebours disparaissent.</li>
+      <li>Chaque bouton fait au moins 56 pixels de haut, cliquable sur toute sa surface.</li>
+      <li>Aucun lien ne mène à la page réservée.</li>
+    </ul></details>
+  <details open><summary>S2 — Choisir son mot de passe, la première fois</summary>
+    <ul>
+      <li>« Bonjour &lt;prénom&gt; ! », deux phrases (à quoi il sert, en choisir un simple), le champ, « Valider » et « Ce n'est pas moi ».</li>
+      <li>Ce qu'on tape s'affiche en clair ; le clavier n'ajoute ni majuscule ni correction.</li>
+      <li>Moins de 4 caractères, espaces du début et de la fin retirés : « Il faut au moins 4 lettres ou chiffres. » Aucune autre règle.</li>
+      <li>« Valider » enregistre et ouvre le paquet, sans redemander le mot de passe. « Ce n'est pas moi » revient à l'accueil sans rien enregistrer.</li>
+    </ul></details>
+  <details open><summary>S3 — Redonner son mot de passe</summary>
+    <ul>
+      <li>« Bonjour &lt;prénom&gt; ! », « Ton mot de passe », l'aide « Majuscules ou minuscules : peu importe. », « Voir mon tirage », « Ce n'est pas moi ».</li>
+      <li>Sous le bouton, dès l'arrivée : « Mot de passe oublié ? Demande à Yannick de l'effacer : tu en choisiras un nouveau, et ton tirage ne changera pas. » Pour Yannick : « Mot de passe oublié ? Efface-le depuis la page réservée. »</li>
+      <li>Ni les majuscules, ni les accents, ni les espaces au bout ne comptent : « Noël », « noel » et « NOEL » sont le même mot de passe.</li>
+      <li>Mauvais mot de passe : le champ se vide, avec « Ce n'est pas le bon mot de passe. Réessaie. »</li>
+      <li>Un bon mot de passe ouvre le paquet. 5 mauvais essais de suite : une minute d'attente pour ce participant, avec « Beaucoup d'essais ratés : attends une minute avant de réessayer. » ; un bon essai remet le compte à zéro.</li>
+    </ul></details>
+  <details open><summary>S4 — Ouvrir le paquet</summary>
+    <ul>
+      <li>Paquet fermé, « Ton tirage est dans ce paquet. » et « Touche le paquet pour l'ouvrir. » ; le paquet entier est cliquable.</li>
+      <li>Ouvert : « Tu offres ton cadeau à », le prénom en grand, « Garde le secret jusqu'au 25 décembre ! » et « Retour à l'accueil ».</li>
+      <li>Le paquet s'ouvre à chaque visite et montre toujours le même prénom ; sans animation si l'appareil en demande moins.</li>
+      <li>Aucun écran ne dit qui offre son cadeau à la personne.</li>
+    </ul></details>
+  <details open><summary>S5 — Rien n'est retenu sur l'appareil</summary>
+    <ul>
+      <li>« Retour à l'accueil », recharger ou fermer la page ramènent à l'accueil ; revoir son tirage redemande le mot de passe.</li>
+      <li>Le bouton retour du navigateur ne réaffiche pas un paquet ouvert.</li>
+    </ul></details>
+  <details open><summary>S6 — Effacer un mot de passe oublié</summary>
+    <ul>
+      <li>La page réservée a sa propre adresse, pour titre « Page réservée », et demande le « Mot de passe d'administration », distinct de celui de Yannick participant, avec « Entrer ». Mauvais mot de passe : « Ce n'est pas le bon mot de passe. » ; même règle et même message des 5 essais.</li>
+      <li>Sous « Participants », les participants dans l'ordre, chacun « Mot de passe choisi » ou « Pas encore de mot de passe ».</li>
+      <li>« Effacer le mot de passe » demande « Effacer le mot de passe de &lt;prénom&gt; ? », explique « &lt;prénom&gt; en choisira un nouveau à sa prochaine visite. Son tirage ne change pas. », puis « Effacer » ou « Annuler ».</li>
+      <li>Effacé : « Mot de passe de &lt;prénom&gt; effacé. » La personne repasse par S2 et retrouve le même prénom dans le paquet.</li>
+      <li>Jamais un tirage ni un mot de passe, pas même ceux de Yannick : « Les tirages ne s'affichent jamais ici, pas même le tien. »</li>
+    </ul></details>
+  <details open><summary>S7 — Le tirage</summary>
+    <p>Le site fait le tirage tout seul, une seule fois, sans que personne n'ait rien à faire ni à voir.</p>
+    <ul>
+      <li>Fait à la première validation d'un mot de passe, avant que le paquet s'ouvre ; aucun écran ne dit qu'il n'est pas encore fait.</li>
+      <li>Une seule fois, même si deux personnes valident au même moment ; il ne change plus, ni après un effacement de mot de passe, ni au redémarrage du site.</li>
+      <li>Aucun écran ne permet de le refaire ni de le voir en entier.</li>
+      <li>Chacun offre à un autre que lui-même ; chacun reçoit d'un seul.</li>
+      <li>Au hasard : tous les tirages permis ont la même chance, y compris ceux où deux personnes s'offrent l'une à l'autre ; un test le vérifie sur de nombreux tirages simulés.</li>
+    </ul></details>
+</section>
+
+<section>
+  <h2>Affichage</h2>
+  <ul>
+    <li><strong>Mobile first</strong> : chaque écran conçu pour un téléphone en portrait, dès 360 pixels de large, sans défilement horizontal ni zoom. Tablette et ordinateur affichent la même colonne, centrée.</li>
+    <li>Le lien s'ouvre dans le navigateur du téléphone comme depuis un SMS, WhatsApp ou un e-mail.</li>
+    <li>Clavier ouvert, le champ du mot de passe et son bouton restent visibles sans défiler.</li>
+    <li>Tout au doigt : éléments d'au moins 48 pixels de côté, ni survol, ni double touche, ni appui long.</li>
+    <li>Accueil : titre, présentation et « Qui es-tu ? » dans le premier écran d'un téléphone de 360 × 640 ; les prénoms suivent en défilant.</li>
+    <li>Texte courant d'au moins 20 pixels, boutons d'au moins 56 pixels de haut, contrastes au niveau AA (WCAG).</li>
+    <li>Un jeu vidéo sobre : écran de sélection pour « Qui es-tu ? », paquet en pixels, boutons qui s'enfoncent. Titres en police pixel, texte dans une police faite pour la lecture.</li>
+    <li>Un seul thème, quel que soit le réglage clair ou sombre de l'appareil.</li>
+  </ul>
+</section>
+
+<section>
+  <h2>Mots exacts</h2>
+  <p><code>&lt;prénom&gt;</code> : le prénom du participant ; <code>&lt;n&gt;</code> : un nombre de jours.</p>
+  <h3>Accueil</h3>
+  <div class="table"><table>
+    <tr><th>Élément</th><th>Texte</th></tr>
+    <tr><td>Titre</td><td>Secret santa de Noël</td></tr>
+    <tr><td>Présentation</td><td>Cette année, chacun offre un cadeau à une personne tirée au sort. Chut : personne ne sait qui lui offre le sien !</td></tr>
+    <tr><td>Date</td><td>Rendez-vous le 25 décembre à midi.</td></tr>
+    <tr><td>Compte à rebours</td><td>Plus que &lt;n&gt; jours ! · C'est demain ! · C'est aujourd'hui !</td></tr>
+    <tr><td>Question</td><td>Qui es-tu ?</td></tr>
+    <tr><td>Boutons</td><td>Yannick · Léa · Christine · Guigui · Mamet · Anne · Loulou</td></tr>
+  </table></div>
+  <h3>Mot de passe</h3>
+  <div class="table"><table>
+    <tr><th>Élément</th><th>Texte</th></tr>
+    <tr><td>Salutation</td><td>Bonjour &lt;prénom&gt; !</td></tr>
+    <tr><td>Première fois</td><td>C'est ta première visite. Choisis un mot de passe : il te servira à revoir ton tirage plus tard.</td></tr>
+    <tr><td>Conseil</td><td>Prends-en un simple, facile à retenir : le nom d'un animal, d'une ville, d'un plat.</td></tr>
+    <tr><td>Champ</td><td>Ton mot de passe</td></tr>
+    <tr><td>Bouton, première fois</td><td>Valider</td></tr>
+    <tr><td>Trop court</td><td>Il faut au moins 4 lettres ou chiffres.</td></tr>
+    <tr><td>Aide, retour</td><td>Majuscules ou minuscules : peu importe.</td></tr>
+    <tr><td>Bouton, retour</td><td>Voir mon tirage</td></tr>
+    <tr><td>Mot de passe oublié</td><td>Mot de passe oublié ? Demande à Yannick de l'effacer : tu en choisiras un nouveau, et ton tirage ne changera pas.</td></tr>
+    <tr><td>Mot de passe oublié, Yannick</td><td>Mot de passe oublié ? Efface-le depuis la page réservée.</td></tr>
+    <tr><td>Mauvais mot de passe</td><td>Ce n'est pas le bon mot de passe. Réessaie.</td></tr>
+    <tr><td>Trop d'essais</td><td>Beaucoup d'essais ratés : attends une minute avant de réessayer.</td></tr>
+    <tr><td>Lien</td><td>Ce n'est pas moi</td></tr>
+  </table></div>
+  <h3>Paquet</h3>
+  <div class="table"><table>
+    <tr><th>Élément</th><th>Texte</th></tr>
+    <tr><td>Paquet fermé</td><td>Ton tirage est dans ce paquet.</td></tr>
+    <tr><td>Consigne</td><td>Touche le paquet pour l'ouvrir.</td></tr>
+    <tr><td>Paquet ouvert</td><td>Tu offres ton cadeau à</td></tr>
+    <tr><td>Prénom tiré</td><td>&lt;prénom&gt;</td></tr>
+    <tr><td>Rappel</td><td>Garde le secret jusqu'au 25 décembre !</td></tr>
+    <tr><td>Bouton</td><td>Retour à l'accueil</td></tr>
+  </table></div>
+  <h3>Page réservée</h3>
+  <div class="table"><table>
+    <tr><th>Élément</th><th>Texte</th></tr>
+    <tr><td>Titre</td><td>Page réservée</td></tr>
+    <tr><td>Champ</td><td>Mot de passe d'administration</td></tr>
+    <tr><td>Bouton</td><td>Entrer</td></tr>
+    <tr><td>Mauvais mot de passe</td><td>Ce n'est pas le bon mot de passe.</td></tr>
+    <tr><td>Trop d'essais</td><td>Beaucoup d'essais ratés : attends une minute avant de réessayer.</td></tr>
+    <tr><td>Titre de la liste</td><td>Participants</td></tr>
+    <tr><td>État</td><td>Mot de passe choisi · Pas encore de mot de passe</td></tr>
+    <tr><td>Bouton</td><td>Effacer le mot de passe</td></tr>
+    <tr><td>Confirmation</td><td>Effacer le mot de passe de &lt;prénom&gt; ?</td></tr>
+    <tr><td>Explication</td><td>&lt;prénom&gt; en choisira un nouveau à sa prochaine visite. Son tirage ne change pas.</td></tr>
+    <tr><td>Boutons de confirmation</td><td>Effacer · Annuler</td></tr>
+    <tr><td>Effacé</td><td>Mot de passe de &lt;prénom&gt; effacé.</td></tr>
+    <tr><td>Rappel</td><td>Les tirages ne s'affichent jamais ici, pas même le tien.</td></tr>
+  </table></div>
+  <h3>Partout</h3>
+  <div class="table"><table>
+    <tr><th>Élément</th><th>Texte</th></tr>
+    <tr><td>Site injoignable</td><td>Oups, le site ne répond pas. Vérifie ta connexion à internet, puis réessaie.</td></tr>
+    <tr><td>Bouton</td><td>Réessayer</td></tr>
+  </table></div>
+</section>
+
+<section>
+  <h2>États vides et cassés</h2>
+  <ul>
+    <li><strong>Personne n'a encore validé de mot de passe</strong> : le tirage n'existe pas encore ; rien ne le montre.</li>
+    <li><strong>Mauvais prénom touché à la première visite</strong>, et mot de passe choisi à la place d'un autre : la vraie personne tombe sur « Redonner son mot de passe » ; le texte « Mot de passe oublié ? » l'envoie vers Yannick, qui l'efface. Celui qui s'est trompé a vu le tirage d'un autre : le site le limite par « Bonjour &lt;prénom&gt; ! » et « Ce n'est pas moi » avant tout enregistrement.</li>
+    <li><strong>Mot de passe oublié</strong> : S3 puis S6.</li>
+    <li><strong>Yannick oublie le sien</strong> : il l'efface depuis la page réservée.</li>
+    <li><strong>Site injoignable</strong> : l'écran reste, avec « Oups, le site ne répond pas… » et « Réessayer », qui refait la dernière action ; ce qui était tapé reste.</li>
+    <li><strong>Après le 25 décembre</strong> : le site marche toujours, sans date ni compte à rebours.</li>
+  </ul>
+</section>
+
+<section>
+  <h2>Décisions</h2>
+  <p>Proposées par le product designer, validées par Yannick le 22 novembre 2026 ; D7 est son choix, à la place de la proposition écartée, et D14 sa demande.</p>
+  <div class="table"><table>
+    <tr><th>N°</th><th>Point</th><th>Décision</th><th>Raison</th><th>Options écartées</th></tr>
+    <tr><td>D1</td><td>Dire qui on est</td><td>Un gros bouton par prénom, sans rien taper</td><td>Le plus simple sans clavier ; sept prénoms tiennent sur un écran</td><td>Taper son prénom</td></tr>
+    <tr><td>D2</td><td>Confirmer le prénom touché</td><td>« Bonjour &lt;prénom&gt; ! » avec « Ce n'est pas moi », sans écran à part</td><td>Rattrape une erreur sans une étape de plus à chaque visite</td><td>Un écran « Tu es bien &lt;prénom&gt; ? »</td></tr>
+    <tr><td>D3</td><td>Saisie du mot de passe</td><td>En clair, une seule fois, au moins 4 caractères</td><td>On voit ce qu'on tape ; aucune règle à comprendre</td><td>Champ masqué, tapé deux fois</td></tr>
+    <tr><td>D4</td><td>Reconnaissance</td><td>Sans majuscules, accents ni espaces au bout</td><td>Les téléphones mettent une majuscule au premier mot</td><td>Reconnaissance exacte : de faux oublis</td></tr>
+    <tr><td>D5</td><td>Mémoriser la personne</td><td>Non : chaque visite redemande le mot de passe</td><td>On se prête téléphones et tablettes en famille</td><td>Rester connecté</td></tr>
+    <tr><td>D6</td><td>Afficher le tirage</td><td>Un paquet à ouvrir d'une touche, à chaque visite</td><td>L'esprit jeu vidéo, une petite surprise</td><td>Le prénom tout de suite</td></tr>
+    <tr><td>D7</td><td>Qui fait le tirage</td><td>Le site, tout seul, à la première validation d'un mot de passe, une seule fois</td><td>Choix de Yannick : rien à faire avant d'envoyer le lien, personne ne voit le tirage</td><td>Un bouton sur la page réservée ; pouvoir le refaire</td></tr>
+    <tr><td>D8</td><td>Règles du tirage</td><td>Celles du cahier des charges ; deux personnes peuvent s'offrir l'une à l'autre</td><td>Le cahier des charges n'en demande pas d'autre</td><td>Exclure couples ou paires réciproques</td></tr>
+    <tr><td>D9</td><td>Essais ratés</td><td>Une minute d'attente après 5 essais ratés</td><td>Freine qui devinerait, sans bloquer longtemps</td><td>Aucune limite ; blocage jusqu'à Yannick</td></tr>
+    <tr><td>D10</td><td>Ton</td><td>Tutoiement, phrases courtes</td><td>Un jeu en famille</td><td>Vouvoiement</td></tr>
+    <tr><td>D11</td><td>Ce que voit Yannick</td><td>L'état du mot de passe de chacun, jamais un tirage ni un mot de passe</td><td>Il participe</td><td>Lui montrer les tirages</td></tr>
+    <tr><td>D12</td><td>Maquette</td><td>Les vrais prénoms, un tirage fictif marqué comme tel</td><td>On juge l'écran avec ses vrais boutons</td><td>Des prénoms inventés</td></tr>
+    <tr><td>D13</td><td>Appareil visé</td><td>Mobile first : chaque écran conçu pour un téléphone en portrait</td><td>Demande de Yannick : les participants seront sur leur téléphone</td><td>Un affichage propre à l'ordinateur</td></tr>
+    <tr><td>D14</td><td>Mot de passe oublié</td><td>Le dire sous « Voir mon tirage », dès l'arrivée ; l'erreur dit seulement de réessayer</td><td>Demande de Yannick : savoir quoi faire sans devoir se tromper d'abord</td><td>Ne le dire qu'après une erreur</td></tr>
+  </table></div>
+</section>
+
+<section id="maquette">
+  <h2>Maquette cliquable</h2>
+  <p>Dans un écran de téléphone, sur un tirage fictif. Sur ton téléphone, ouvre-la en plein écran. Yannick et Léa ont déjà le mot de passe <code>sapin</code> ; les autres arrivent pour la première fois. Les réglages à côté de l'écran changent la date, simulent une coupure et ouvrent la page réservée.</p>
+  <div class="mockup"><iframe src="1-tirage-maquette.html" title="Maquette cliquable du site"></iframe></div>
+  <p><a href="1-tirage-maquette.html">Ouvrir la maquette en plein écran</a></p>
+</section>
+</main>
+</body>
+</html>

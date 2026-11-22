@@ -1,0 +1,54 @@
+<title>Site du secret santa</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Pixelify+Sans:wght@500;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="style.css">
+
+<nav><a href="index.html">Accueil</a><a href="epics/1-tirage.html">Epic 1 — Le tirage</a></nav>
+<main>
+<header style="display:flex;flex-direction:column;gap:8px">
+  <span class="eyebrow">secret-santa</span>
+  <h1>Le secret santa de Noël 2026</h1>
+  <p>Le site du secret santa familial : chacun dit qui il est, choisit un mot de passe, et découvre à qui il offre son cadeau.</p>
+</header>
+
+<div class="wait" id="ce-qui-t-attend"></div>
+
+<section>
+  <h2>Le besoin</h2>
+  <p>Un secret santa en famille pour Noël, le <strong>25 décembre 2026 à midi</strong>. Chacun offre un cadeau à une personne tirée au sort, sans savoir qui lui offre le sien. Sept participants : Yannick, Léa, Christine, Guigui, Mamet, Anne et Loulou. Un seul lien, l'adresse racine du site (sans chemin, par exemple une adresse Vercel), est envoyé à chacun.</p>
+  <h3>Ce que fait le site</h3>
+  <ol>
+    <li>La page d'accueil présente le secret santa en quelques mots et invite la personne à dire qui elle est.</li>
+    <li>La première fois, la personne choisit un mot de passe. Elle le redonnera pour revoir son tirage plus tard.</li>
+    <li>Une fois son identité confirmée, elle voit à qui elle offre son cadeau.</li>
+    <li>Si une personne oublie son mot de passe, Yannick l'efface depuis une page réservée ; la personne en choisit un nouveau, et son tirage ne change pas.</li>
+  </ol>
+  <h3>Le tirage</h3>
+  <ul>
+    <li>Il est fait au hasard.</li>
+    <li>Personne ne se tire soi-même.</li>
+    <li>Chacun offre à une seule personne et reçoit d'une seule personne.</li>
+  </ul>
+  <h3>Contraintes</h3>
+  <ul>
+    <li><strong>UX la plus simple possible</strong> : des personnes âgées, peu à l'aise avec le numérique, participent.</li>
+    <li><strong>La page du mot de passe</strong> est concise : elle explique à quoi il sert et invite à en choisir un simple, facile à retenir.</li>
+    <li><strong>Le design</strong> ne reprend pas celui des sites générés habituels : sobre mais original, sympathique et jovial, un peu dans l'esprit d'un jeu vidéo.</li>
+  </ul>
+  <h3>Restrictions</h3>
+  <ul>
+    <li>Spec, architecture et découpage sont validés par Yannick.</li>
+    <li>Aucun mot de passe ni tirage réel n'est versionné, ni montré sur le site du projet, ni dans une capture : tests et maquettes utilisent des tirages fictifs.</li>
+    <li>Les secrets (clés, jetons, mot de passe d'administration) vont dans <code>.env</code>, ignoré par git.</li>
+  </ul>
+  <p class="source">Le Markdown fait foi : <a href="https://github.com/yannicktian/secret-santa/blob/main/docs/cahier-des-charges.md">docs/cahier-des-charges.md</a>.</p>
+</section>
+
+<section>
+  <h2>Epics</h2>
+  <div class="table"><table>
+    <tr><th>Epic</th><th>Ce qu'elle change</th></tr>
+    <tr><td><a href="epics/1-tirage.html">#1 Le tirage</a></td><td>Le site entier : accueil, mot de passe, paquet à ouvrir, et la page réservée de Yannick.</td></tr>
+  </table></div>
+</section>
+</main>
