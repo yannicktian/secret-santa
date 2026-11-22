@@ -122,10 +122,11 @@ cours.
    aussi le blocage : un participant sans mot de passe n'est jamais bloqué.
 2. Le participant est bloqué (`lock:<id>` existe) : 429 `locked`, sans vérifier le mot de
    passe, même juste.
-3. L'essai est compté avant la vérification, par un `INCR fails:<id>` atomique : des essais
-   envoyés en même temps ne donnent jamais plus de 5 vérifications. Au-delà du cinquième :
-   429 `locked`, sans vérifier. Le cinquième écrit le blocage avant sa vérification, pour
-   que les essais suivants le voient pendant qu'elle dure.
+3. L'essai est compté avant la vérification, par un `INCR fails:<id>` atomique, puis le
+   blocage est relu : des essais envoyés en même temps ne donnent jamais plus de 5
+   vérifications. Au-delà du cinquième, ou si le blocage a été posé entre-temps (le compteur
+   est alors remis à zéro) : 429 `locked`, sans vérifier. Le cinquième écrit le blocage
+   avant sa vérification, pour que les essais suivants le voient pendant qu'elle dure.
 4. Le mot de passe est juste : le compteur d'essais est remis à zéro (et le blocage du
    cinquième retiré), 200 `{ receiver }`.
 5. Il est faux : au cinquième de suite, le compteur est remis à zéro, le participant reste
@@ -153,7 +154,7 @@ le client est créé avec `automaticDeserialization: false`, pour que rien ne so
 |---|---|---|---|
 | `draw` | Le tirage, JSON des identifiants : `{"yannick":"christine","lea":"mamet",…}` | Sans fin | `SET draw … NX`, une seule fois |
 | `password:<id>` | L'empreinte : `scrypt$16384$8$1$<sel en base64>$<empreinte en base64>` | Sans fin | `SET … NX` au choix ; `DEL` à l'effacement |
-| `fails:<id>` | Le nombre d'essais de suite depuis le dernier bon (`<id>` d'un participant, ou `admin`) | Sans fin | `INCR` à chaque essai, avant la vérification ; `DEL` à un bon essai, au blocage ou à l'effacement |
+| `fails:<id>` | Le nombre d'essais de suite depuis le dernier bon (`<id>` d'un participant, ou `admin`) | Sans fin | `INCR` à chaque essai, avant la vérification ; `DEL` à un bon essai, au blocage, à un essai compté pendant un blocage, ou à l'effacement |
 | `lock:<id>` | `1` | 60 secondes | `SET … EX 60` au cinquième essai, avant sa vérification, ou sur un compte au-delà du cinquième sans blocage ; `DEL` si ce cinquième essai est juste, et à l'effacement |
 
 Seule la production a une base : `secret-santa-kv`, reliée au seul environnement
@@ -312,7 +313,7 @@ d'une base gratuite peu utilisée.
 |---|---|---|
 | Le tirage est uniforme (S7) | `tests/unit/draw.test.js` | 185 400 tirages simulés avec un générateur à graine fixe (100 attendus par tirage possible) : les 1 854 tirages possibles sortent tous, aucun point fixe, et le khi-deux à 1 853 degrés de liberté reste sous 2 142 (probabilité d'un faux échec d'environ trois sur un million). Le même test échoue sur un algorithme biaisé (Sattolo, qui ne fait que des cycles). 1859,8 obtenu sur un prototype, en 0,7 seconde |
 | Un seul tirage (S7) | `tests/unit/gift.test.js` | Deux choix simultanés de deux participants, sur un double dont `get` rend la main avant `setIfAbsent` : un seul `draw` écrit, et les deux reçoivent un prénom de ce tirage |
-| Les essais ratés (S3, S6) | `tests/unit/attempts.test.js` | Horloge avancée : 4 ratés puis 1 bon, compte à zéro ; 5 ratés, blocage, bon mot de passe refusé, débloqué après 60 secondes ; 100 essais simultanés, et 50 envoyés à la suite pendant des vérifications lentes : 5 vérifications au plus ; un compte laissé sans blocage ne bloque qu'une minute |
+| Les essais ratés (S3, S6) | `tests/unit/attempts.test.js` | Horloge avancée : 4 ratés puis 1 bon, compte à zéro ; 5 ratés, blocage, bon mot de passe refusé, débloqué après 60 secondes ; 100 essais simultanés, et 50 envoyés à la suite pendant des vérifications lentes : 5 vérifications au plus ; des essais comptés après la remise à zéro d'un blocage n'ont aucune vérification ; un compte laissé sans blocage ne bloque qu'une minute |
 | Rien de secret n'est envoyé (sûreté) | `tests/securite/fuite.test.js` | Un parcours complet sur le double en mémoire, avec un tirage fictif et des mots de passe témoins ; chaque réponse (pages, scripts, JSON) est cherchée : ni empreinte, ni sel, ni mot de passe, ni `ADMIN_PASSWORD`, ni le tirage d'un autre, ni le tirage entier ; `public/` ne cite aucun nom de variable d'environnement |
 | Les écrans | `tests/e2e/*.spec.js` | Les mots exacts, les états, les tailles (48 et 56 pixels, texte de 20 pixels), 360 pixels sans défilement horizontal, appels interceptés par `page.route` selon le tableau des fonctions ; le parcours complet sans interception |
 

@@ -123,10 +123,11 @@
     </ol></div>
   <div class="example"><span class="eyebrow">Redonner son mot de passe (S3)</span>
     <ol>
+      <li>Pas de mot de passe (effacé entre-temps) : 409 <code>no_password</code>, sans compter d'essai, l'écran passe à « Choisir ». L'effacement retire aussi le blocage.</li>
       <li>Participant bloqué : 429 <code>locked</code>, sans vérifier, même le bon.</li>
-      <li>Pas de mot de passe (effacé entre-temps) : 409 <code>no_password</code>, l'écran passe à « Choisir ».</li>
-      <li>Juste : compteur à zéro, le prénom tiré.</li>
-      <li>Faux : essai compté ; au cinquième de suite, blocage d'une minute et 429 (c'est lui qui affiche « Beaucoup d'essais ratés… ») ; sinon 401.</li>
+      <li>Essai compté avant la vérification (<code>INCR</code> atomique), puis blocage relu : jamais plus de 5 vérifications, même pour des essais simultanés. Au-delà du cinquième, ou blocage posé entre-temps : 429, sans vérifier. Le cinquième pose le blocage avant sa vérification.</li>
+      <li>Juste : compteur à zéro (et blocage du cinquième retiré), le prénom tiré.</li>
+      <li>Faux : au cinquième de suite, compteur à zéro, blocage d'une minute et 429 (c'est lui qui affiche « Beaucoup d'essais ratés… ») ; sinon 401.</li>
     </ol></div>
   <div class="example"><span class="eyebrow">La page réservée (S6)</span>
     <p>Chaque appel porte le mot de passe d'administration, comparé tel quel à <code>ADMIN_PASSWORD</code>, en temps constant ; même règle des 5 essais, avec l'identifiant <code>admin</code>. Sans <code>ADMIN_PASSWORD</code>, tout appel répond 503 : la page ne s'ouvre jamais sans mot de passe posé. L'effacement supprime l'empreinte, le compteur d'essais et le blocage du participant, et rien d'autre. Jamais de tirage, d'empreinte ni de mot de passe dans la réponse.</p></div>
@@ -139,8 +140,8 @@
     <tr><th>Clé</th><th>Valeur</th><th>Durée</th><th>Écrite par</th></tr>
     <tr><td><code>draw</code></td><td>JSON des identifiants, par exemple fictif <code>{"yannick":"christine",…}</code></td><td>Sans fin</td><td><code>SET … NX</code>, une fois</td></tr>
     <tr><td><code>password:&lt;id&gt;</code></td><td><code>scrypt$16384$8$1$&lt;sel&gt;$&lt;empreinte&gt;</code></td><td>Sans fin</td><td><code>SET … NX</code> ; <code>DEL</code> à l'effacement</td></tr>
-    <tr><td><code>fails:&lt;id&gt;</code></td><td>Essais ratés de suite (participant ou <code>admin</code>)</td><td>Sans fin</td><td><code>INCR</code> ; <code>DEL</code> au bon essai, au blocage ou à l'effacement</td></tr>
-    <tr><td><code>lock:&lt;id&gt;</code></td><td><code>1</code></td><td>60 secondes</td><td><code>SET … EX 60</code> au cinquième raté ; <code>DEL</code> à l'effacement</td></tr>
+    <tr><td><code>fails:&lt;id&gt;</code></td><td>Essais de suite depuis le dernier bon (participant ou <code>admin</code>)</td><td>Sans fin</td><td><code>INCR</code> à chaque essai, avant la vérification ; <code>DEL</code> au bon essai, au blocage, à un essai compté pendant un blocage, ou à l'effacement</td></tr>
+    <tr><td><code>lock:&lt;id&gt;</code></td><td><code>1</code></td><td>60 secondes</td><td><code>SET … EX 60</code> au cinquième essai, avant sa vérification, ou sur un compte au-delà du cinquième sans blocage ; <code>DEL</code> si ce cinquième est juste, et à l'effacement</td></tr>
   </table></div>
   <p>Seule la production a une base : <code>secret-santa-kv</code>, reliée au seul environnement Production. Les déploiements de revue n'en ont pas (décision V7).</p>
   <h3>Le tirage</h3>
@@ -211,7 +212,7 @@
     <tr><th>Ce qui est prouvé</th><th>Comment</th></tr>
     <tr><td>Le tirage est uniforme</td><td>185 400 tirages simulés à graine fixe : les 1 854 tirages sortent, aucun point fixe, khi-deux sous 2 142 (faux échec : moins d'un sur un million) ; le test échoue sur un algorithme biaisé (Sattolo)</td></tr>
     <tr><td>Un seul tirage</td><td>Deux choix simultanés sur un double qui intercale les appels : un seul tirage écrit</td></tr>
-    <tr><td>Les essais ratés</td><td>Horloge avancée : remise à zéro, blocage, déblocage après 60 secondes</td></tr>
+    <tr><td>Les essais ratés</td><td>Horloge avancée : remise à zéro, blocage, déblocage après 60 secondes ; essais simultanés, ou comptés après la remise à zéro d'un blocage : 5 vérifications au plus ; un compte laissé sans blocage ne bloque qu'une minute</td></tr>
     <tr><td>Rien de secret envoyé</td><td>Un parcours complet avec des mots de passe témoins : aucune réponse ne contient d'empreinte, de sel, de mot de passe, <code>ADMIN_PASSWORD</code>, ni le tirage d'un autre</td></tr>
     <tr><td>Les écrans</td><td>Mots exacts, états, tailles, 360 pixels, appels interceptés ; puis le parcours complet sans interception</td></tr>
   </table></div>

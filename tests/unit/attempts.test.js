@@ -156,6 +156,27 @@ test("attempts sent one after the other during slow checks get at most 5 checks"
   assert.equal(checked, 5);
 });
 
+test("attempts counted after a lock reset the count get no check", async () => {
+  const inner = createMemoryStore();
+  let incrs = 0;
+  /** @type {import("../../lib/store.js").Store} */
+  const store = {
+    ...inner,
+    incr: async (key) => {
+      if (++incrs > 6) await new Promise((resolve) => setTimeout(resolve, 5));
+      return inner.incr(key);
+    },
+  };
+  let checked = 0;
+  const slowWrong = async () => {
+    checked++;
+    await new Promise((resolve) => setTimeout(resolve, 30));
+    return false;
+  };
+  await Promise.all(Array.from({ length: 12 }, () => attempt(store, "lea", slowWrong)));
+  assert.equal(checked, 5);
+});
+
 test("a right password on the fifth attempt opens and removes the lock", async () => {
   const { store } = setup();
   await fail(store, "lea", 4);
