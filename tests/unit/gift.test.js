@@ -252,3 +252,32 @@ test("no answer contains the hash, the whole draw or who gives to the participan
     assert.ok(["receiver", "hasPassword"].includes(Object.keys(answer).join()), text);
   }
 });
+
+test("a password erased during a choice lets the choice be made again", async () => {
+  const { store } = await setup();
+  await choosePassword(store, "lea", "sapin");
+  let erased = false;
+  /** @type {import("../../lib/store.js").Store} */
+  const racing = {
+    ...store,
+    setIfAbsent: async (key, value) => {
+      const written = await store.setIfAbsent(key, value);
+      if (key === "password:lea" && !written && !erased) {
+        erased = true;
+        await erase(store, "lea");
+      }
+      return written;
+    },
+  };
+  assert.deepEqual(await choosePassword(racing, "lea", "etoile"), { receiver: "Christine" });
+  assert.deepEqual(await openGift(store, "lea", "etoile"), { receiver: "Christine" });
+  assert.equal(await store.get("fails:lea"), null);
+});
+
+test("open-gift never makes a draw", async () => {
+  const { store } = await setup();
+  await choosePassword(store, "lea", "sapin");
+  await store.del("draw");
+  await assert.rejects(openGift(store, "lea", "sapin"));
+  assert.equal(await store.get("draw"), null);
+});
