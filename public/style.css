@@ -341,9 +341,6 @@ input:focus-visible {
   min-height: 48px;
   min-width: 48px;
 }
-.link.dark {
-  color: var(--muted);
-}
 
 /* The gift (S4) */
 .gift-wrap {
@@ -518,12 +515,6 @@ input:focus-visible {
   flex: 1;
   min-width: 8ch;
   justify-content: center;
-}
-.admin-tag {
-  font-family: var(--pixel);
-  font-size: 0.95rem;
-  color: var(--ice);
-  letter-spacing: 0.06em;
 }
 
 /* Site injoignable: the banner, at the bottom of the screen */

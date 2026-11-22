@@ -1,4 +1,5 @@
-// The calls to the functions of api/, and the banner shown when the site does not answer.
+// The calls to the functions of api/, the turns that tell a late answer, and the banner shown
+// when the site does not answer.
 
 /** The error codes of the functions that a screen handles itself (docs/architecture.md). */
 const handled = new Set(["too_short", "already_chosen", "no_password", "wrong_password", "locked"]);
@@ -28,10 +29,30 @@ export function waiting() {
   return false;
 }
 
-/** Removes the banner, when the screen changes. */
-export function clearBanner() {
+/** Removes the banner. */
+function clearBanner() {
   banner?.remove();
   banner = null;
+}
+
+/** Grows at each screen change or tap, so that a late answer does not replace a newer screen. */
+let shown = 0;
+
+/** To call when the screen changes: the answers awaited are ignored and the banner removed. */
+export function changeScreen() {
+  shown += 1;
+  clearBanner();
+}
+
+/**
+ * Takes a turn before a call, to give to call() as its third argument: the function returned
+ * says, once the answer is there, whether it is still the last one asked for, with no screen
+ * change nor tap since; if not, the answer is ignored and no banner is shown.
+ */
+export function turn() {
+  changeScreen();
+  const current = shown;
+  return () => current === shown;
 }
 
 /**

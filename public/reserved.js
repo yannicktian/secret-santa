@@ -2,7 +2,8 @@
 // participants with the state of their password, its erasing, and redoing the draw. The administration
 // password lives in a variable for the visit only, sent with each call (docs/architecture.md,
 // A6); reloading the page asks for it again. Nothing is kept on the device.
-import { call, clearBanner, waiting } from "./call.js";
+import { call, changeScreen, turn, waiting } from "./call.js";
+import { button, element } from "./dom.js";
 
 const root = /** @type {HTMLElement} */ (document.querySelector("main"));
 
@@ -15,49 +16,11 @@ let password = "";
 let participants = [];
 
 /**
- * An element with its class and its children.
- * @param {string} tag
- * @param {string} className
- * @param {...(Node | string)} children
- */
-function element(tag, className, ...children) {
-  const node = document.createElement(tag);
-  if (className) node.className = className;
-  node.append(...children);
-  return node;
-}
-
-/**
- * A button of the page.
- * @param {string} className
- * @param {string} text
- * @param {() => void} onClick
- */
-function button(className, text, onClick) {
-  const node = element("button", className, text);
-  node.setAttribute("type", "button");
-  node.addEventListener("click", onClick);
-  return node;
-}
-
-/** Grows at each screen change or tap, so that a late answer does not replace a newer screen. */
-let shown = 0;
-
-/** Takes a turn before a call: the function returned says whether the answer is still awaited. */
-function turn() {
-  shown += 1;
-  clearBanner();
-  const current = shown;
-  return () => current === shown;
-}
-
-/**
  * Shows a screen under the title of the page.
  * @param {...Node} children
  */
 function show(...children) {
-  shown += 1;
-  clearBanner();
+  changeScreen();
   root.replaceChildren(element("h1", "title-small", "Page réservée"), ...children);
   window.scrollTo(0, 0);
 }
@@ -141,7 +104,9 @@ function showList(done) {
       element("span", participant.hasPassword ? "st on" : "st", state),
     );
     if (participant.hasPassword) {
-      row.append(button("btn danger", "Effacer le mot de passe", () => showConfirm(participant)));
+      row.append(
+        button("btn danger", "Effacer le mot de passe", () => showEraseConfirm(participant)),
+      );
     }
     return row;
   });
@@ -166,33 +131,28 @@ function showList(done) {
 }
 
 /**
- * The confirmation of an erasing.
- * @param {Participant} participant
+ * A confirmation: its question, its texts, and the button that sends the action to
+ * POST /api/reserved, then shows the list with the message `done`.
+ * @param {{ question: string, texts: string[], confirm: string, body: object, done: string }} confirmation
  */
-function showConfirm(participant) {
-  const { id, name } = participant;
-  const erase = async () => {
+function showConfirmation({ question, texts, confirm, body, done }) {
+  const send = async () => {
     if (waiting()) return;
     const isCurrent = turn();
-    const body = { password, action: "erase", participant: id };
-    const answer = await call("/api/reserved", body, isCurrent);
-    if (isCurrent()) answered(answer, `Mot de passe de ${name} effacé.`);
+    const answer = await call("/api/reserved", { password, ...body }, isCurrent);
+    if (isCurrent()) answered(answer, done);
   };
   const panel = element(
     "div",
     "panel",
-    element("p", "", element("strong", "", `Effacer le mot de passe de ${name} ?`)),
-    element(
-      "p",
-      "",
-      `${name} en choisira un nouveau à sa prochaine visite. Son tirage ne change pas.`,
-    ),
+    element("p", "", element("strong", "", question)),
+    ...texts.map((text) => element("p", "", text)),
     element(
       "div",
       "actions",
-      button("btn danger", "Effacer", erase),
+      button("btn danger", confirm, send),
       button("btn plain", "Annuler", () => {
-        // While the erasing is awaited, the list would not show its answer.
+        // While the action is awaited, the list would not show its answer.
         if (!waiting()) showList();
       }),
     ),
@@ -200,39 +160,36 @@ function showConfirm(participant) {
   show(element("div", "shadow", panel));
 }
 
+/**
+ * The confirmation of an erasing.
+ * @param {Participant} participant
+ */
+function showEraseConfirm(participant) {
+  const { id, name } = participant;
+  showConfirmation({
+    question: `Effacer le mot de passe de ${name} ?`,
+    texts: [`${name} en choisira un nouveau à sa prochaine visite. Son tirage ne change pas.`],
+    confirm: "Effacer",
+    body: { action: "erase", participant: id },
+    done: `Mot de passe de ${name} effacé.`,
+  });
+}
+
 /** The confirmation of redoing the draw, with how many have seen theirs. */
 function showRedrawConfirm() {
-  const redo = async () => {
-    if (waiting()) return;
-    const isCurrent = turn();
-    const answer = await call("/api/reserved", { password, action: "redraw" }, isCurrent);
-    if (isCurrent()) answered(answer, "Tirage refait. Chacun choisira un nouveau mot de passe.");
-  };
   const seen = participants.filter((participant) => participant.hasPassword).length;
-  const panel = element(
-    "div",
-    "panel",
-    element("p", "", element("strong", "", "Refaire le tirage ?")),
-    element(
-      "p",
-      "",
-      "Tous les mots de passe seront effacés : chacun en choisira un nouveau et découvrira un nouveau tirage.",
-    ),
-  );
-  if (seen === 1) panel.append(element("p", "", "1 personne a déjà vu son tirage."));
-  if (seen > 1) panel.append(element("p", "", `${seen} personnes ont déjà vu leur tirage.`));
-  panel.append(
-    element(
-      "div",
-      "actions",
-      button("btn danger", "Refaire le tirage", redo),
-      button("btn plain", "Annuler", () => {
-        // While the redraw is awaited, the list would not show its answer.
-        if (!waiting()) showList();
-      }),
-    ),
-  );
-  show(element("div", "shadow", panel));
+  const texts = [
+    "Tous les mots de passe seront effacés : chacun en choisira un nouveau et découvrira un nouveau tirage.",
+  ];
+  if (seen === 1) texts.push("1 personne a déjà vu son tirage.");
+  if (seen > 1) texts.push(`${seen} personnes ont déjà vu leur tirage.`);
+  showConfirmation({
+    question: "Refaire le tirage ?",
+    texts,
+    confirm: "Refaire le tirage",
+    body: { action: "redraw" },
+    done: "Tirage refait. Chacun choisira un nouveau mot de passe.",
+  });
 }
 
 /** Forgets everything and asks for the administration password. */

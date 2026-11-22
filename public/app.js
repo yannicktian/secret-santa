@@ -1,8 +1,9 @@
 // The screens of the participant: the home page (S1) and the passage from one screen to the
 // next, in one document and without history entry (S5). The state lives in variables only,
 // the states of the participants asked as the home page opens included.
-import { attempt, call, clearBanner, waiting } from "./call.js";
+import { attempt, call, changeScreen, turn, waiting } from "./call.js";
 import { countdown } from "./countdown.js";
+import { element } from "./dom.js";
 import { showGift } from "./screens/gift.js";
 import { showPassword } from "./screens/password.js";
 
@@ -18,33 +19,6 @@ const participants = [
 ];
 
 const root = /** @type {HTMLElement} */ (document.querySelector("main"));
-
-/**
- * An element with its class and its children.
- * @param {string} tag
- * @param {string} className
- * @param {...(Node | string)} children
- */
-function element(tag, className, ...children) {
-  const node = document.createElement(tag);
-  if (className) node.className = className;
-  node.append(...children);
-  return node;
-}
-
-/** Grows at each screen change or tap, so that a late answer does not replace a newer screen. */
-let shown = 0;
-
-/**
- * Takes a turn before a call: the function returned says whether the answer is still the
- * last one asked for, with no screen change nor tap since.
- */
-function turn() {
-  shown += 1;
-  clearBanner();
-  const current = shown;
-  return () => current === shown;
-}
 
 /** The buttons of the first names, while the home page is shown. @type {HTMLElement[]} */
 let players = [];
@@ -94,12 +68,11 @@ async function loadStates() {
 
 /** Empties the screen, the banner and the scroll, before showing another screen. */
 function clear() {
-  shown += 1;
+  changeScreen();
   visits += 1;
   states = null;
   players = [];
   tapped = null;
-  clearBanner();
   root.replaceChildren();
   window.scrollTo(0, 0);
 }
@@ -128,10 +101,9 @@ async function choose(participant, button) {
     participant,
     hasPassword,
     home,
-    turn,
     gift: (/** @type {string} */ receiver) => {
       clear();
-      showGift(root, { receiver, home, turn });
+      showGift(root, { receiver, home });
     },
   });
 }

@@ -1,12 +1,11 @@
 // The screen of the gift (S4): a pixel gift, closed; touched, it shakes, its lid opens with
 // confetti, then the name drawn is shown. Opened at once when the device asks for less motion.
+import { turn } from "../call.js";
+import { button, element } from "../dom.js";
 
 /**
  * @typedef {object} GiftContext
  * @property {string} receiver The name drawn, to show once the gift is open.
- * @property {() => () => boolean} turn To call when the animation starts: the function it
- *   returns says, at the end of each timer, whether the screen is still the same, with no
- *   screen change since; if not, nothing more is shown.
  * @property {() => void} home Comes back to the home page and forgets everything.
  */
 
@@ -77,19 +76,6 @@ function drawing() {
 }
 
 /**
- * An element with its class and its children.
- * @param {string} tag
- * @param {string} className
- * @param {...(Node | string)} children
- */
-function element(tag, className, ...children) {
-  const node = document.createElement(tag);
-  if (className) node.className = className;
-  node.append(...children);
-  return node;
-}
-
-/**
  * Throws confetti from the top of the gift; each one is removed once fallen.
  * @param {Element} from
  */
@@ -116,9 +102,7 @@ function burst(from) {
  */
 function showOpened(root, context) {
   const opened = element("div", "giftbtn small open", drawing());
-  const back = element("button", "btn plain", "Retour à l'accueil");
-  back.setAttribute("type", "button");
-  back.addEventListener("click", context.home);
+  const back = button("btn plain", "Retour à l'accueil", context.home);
   root.replaceChildren(
     element(
       "div",
@@ -159,8 +143,9 @@ export function showGift(root, context) {
       showOpened(root, context);
       return;
     }
-    // Back to the home page from the cache of the browser, meanwhile: nothing more is shown.
-    const isCurrent = context.turn();
+    // At the end of each timer, whether the screen is still the same: back to the home page
+    // from the cache of the browser, meanwhile, nothing more is shown.
+    const isCurrent = turn();
     gift.classList.replace("idle", "shake");
     setTimeout(() => {
       if (!isCurrent()) return;
