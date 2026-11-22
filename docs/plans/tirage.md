@@ -269,7 +269,7 @@ de passe d'administration, voir les sept participants « Pas encore de mot de pa
 - **Fini quand** : `docs/deploiement.md` dit ce qui a été constaté en production, et ce
   qui ne le sera qu'au constat humain et au premier usage (Redis lu par la page réservée,
   puis écrit au premier mot de passe choisi) ; aucun agent n'a écrit dans la base.
-- **Constat humain** : Yannick ouvre `/reservee` en production, entre son mot de passe d'administration, voit les sept participants « Pas encore de mot de passe », choisit son propre mot de passe de participant et ouvre son paquet (ce qui fait le vrai tirage), voit « Mot de passe choisi » pour lui sur la page réservée, puis envoie le lien. Le premier participant qui choisit son mot de passe fait le vrai
+- **Constat humain** : Yannick ouvre `/reservee` en production, entre son mot de passe d'administration, voit les sept participants « Pas encore de mot de passe », choisit son propre mot de passe de participant (ce qui fait le vrai tirage) et ouvre son paquet, voit « Mot de passe choisi » pour lui sur la page réservée, puis envoie le lien. Le premier participant qui choisit son mot de passe fait le vrai
   tirage.
 
 ## Couverture de la spec
