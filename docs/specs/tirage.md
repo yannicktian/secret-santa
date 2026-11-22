@@ -132,11 +132,13 @@ change pas.
 
 Critères :
 
-- La page réservée a sa propre adresse, choisie par l'architecture, et demande le mot de
-  passe d'administration, qui n'est pas celui de Yannick participant.
+- La page réservée a sa propre adresse, choisie par l'architecture. Elle a pour titre
+  « Page réservée » et demande le « Mot de passe d'administration », qui n'est pas celui
+  de Yannick participant, avec le bouton « Entrer ».
 - Un mauvais mot de passe d'administration affiche « Ce n'est pas le bon mot de passe. » ;
-  la règle des 5 essais de S3 s'applique aussi.
-- La page liste les participants, dans l'ordre du périmètre, chacun avec son état :
+  la règle des 5 essais de S3 s'applique aussi, avec le même message « Beaucoup d'essais
+  ratés : attends une minute avant de réessayer. ».
+- Sous le titre « Participants », la page liste les participants, dans l'ordre du périmètre, chacun avec son état :
   « Mot de passe choisi » ou « Pas encore de mot de passe ».
 - Chaque participant dont le mot de passe est choisi a le bouton « Effacer le mot de
   passe ». Il ouvre la confirmation « Effacer le mot de passe de <prénom> ? » avec
@@ -243,6 +245,7 @@ par un nombre de jours.
 | Champ | Mot de passe d'administration |
 | Bouton | Entrer |
 | Mauvais mot de passe | Ce n'est pas le bon mot de passe. |
+| Trop d'essais | Beaucoup d'essais ratés : attends une minute avant de réessayer. |
 | Titre de la liste | Participants |
 | État | Mot de passe choisi · Pas encore de mot de passe |
 | Bouton | Effacer le mot de passe |

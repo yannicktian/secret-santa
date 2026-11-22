@@ -59,7 +59,7 @@
     <ul>
       <li>« Bonjour &lt;prénom&gt; ! », deux phrases (à quoi il sert, en choisir un simple), le champ, « Valider » et « Ce n'est pas moi ».</li>
       <li>Ce qu'on tape s'affiche en clair ; le clavier n'ajoute ni majuscule ni correction.</li>
-      <li>Moins de 4 caractères : « Il faut au moins 4 lettres ou chiffres. » Aucune autre règle.</li>
+      <li>Moins de 4 caractères, espaces du début et de la fin retirés : « Il faut au moins 4 lettres ou chiffres. » Aucune autre règle.</li>
       <li>« Valider » enregistre et ouvre le paquet, sans redemander le mot de passe. « Ce n'est pas moi » revient à l'accueil sans rien enregistrer.</li>
     </ul></details>
   <details open><summary>S3 — Redonner son mot de passe</summary>
@@ -68,7 +68,7 @@
       <li>Sous le bouton, dès l'arrivée : « Mot de passe oublié ? Demande à Yannick de l'effacer : tu en choisiras un nouveau, et ton tirage ne changera pas. » Pour Yannick : « Mot de passe oublié ? Efface-le depuis la page réservée. »</li>
       <li>Ni les majuscules, ni les accents, ni les espaces au bout ne comptent : « Noël », « noel » et « NOEL » sont le même mot de passe.</li>
       <li>Mauvais mot de passe : le champ se vide, avec « Ce n'est pas le bon mot de passe. Réessaie. »</li>
-      <li>5 mauvais essais de suite : une minute d'attente pour ce participant, avec « Beaucoup d'essais ratés : attends une minute avant de réessayer. »</li>
+      <li>Un bon mot de passe ouvre le paquet. 5 mauvais essais de suite : une minute d'attente pour ce participant, avec « Beaucoup d'essais ratés : attends une minute avant de réessayer. » ; un bon essai remet le compte à zéro.</li>
     </ul></details>
   <details open><summary>S4 — Ouvrir le paquet</summary>
     <ul>
@@ -84,8 +84,8 @@
     </ul></details>
   <details open><summary>S6 — Effacer un mot de passe oublié</summary>
     <ul>
-      <li>La page réservée a sa propre adresse et demande le mot de passe d'administration, distinct de celui de Yannick participant ; même règle des 5 essais.</li>
-      <li>Les participants dans l'ordre, chacun « Mot de passe choisi » ou « Pas encore de mot de passe ».</li>
+      <li>La page réservée a sa propre adresse, pour titre « Page réservée », et demande le « Mot de passe d'administration », distinct de celui de Yannick participant, avec « Entrer ». Mauvais mot de passe : « Ce n'est pas le bon mot de passe. » ; même règle et même message des 5 essais.</li>
+      <li>Sous « Participants », les participants dans l'ordre, chacun « Mot de passe choisi » ou « Pas encore de mot de passe ».</li>
       <li>« Effacer le mot de passe » demande « Effacer le mot de passe de &lt;prénom&gt; ? », explique « &lt;prénom&gt; en choisira un nouveau à sa prochaine visite. Son tirage ne change pas. », puis « Effacer » ou « Annuler ».</li>
       <li>Effacé : « Mot de passe de &lt;prénom&gt; effacé. » La personne repasse par S2 et retrouve le même prénom dans le paquet.</li>
       <li>Jamais un tirage ni un mot de passe, pas même ceux de Yannick : « Les tirages ne s'affichent jamais ici, pas même le tien. »</li>
@@ -113,13 +113,6 @@
     <li>Un jeu vidéo sobre : écran de sélection pour « Qui es-tu ? », paquet en pixels, boutons qui s'enfoncent. Titres en police pixel, texte dans une police faite pour la lecture.</li>
     <li>Un seul thème, quel que soit le réglage clair ou sombre de l'appareil.</li>
   </ul>
-</section>
-
-<section id="maquette">
-  <h2>Maquette cliquable</h2>
-  <p>Dans un écran de téléphone, sur un tirage fictif. Sur ton téléphone, ouvre-la en plein écran. Yannick et Léa ont déjà le mot de passe <code>sapin</code> ; les autres arrivent pour la première fois. Les réglages à côté de l'écran changent la date, simulent une coupure et ouvrent la page réservée.</p>
-  <div class="mockup"><iframe src="1-tirage-maquette.html" title="Maquette cliquable du site"></iframe></div>
-  <p><a href="1-tirage-maquette.html">Ouvrir la maquette en plein écran</a></p>
 </section>
 
 <section>
@@ -169,6 +162,7 @@
     <tr><td>Champ</td><td>Mot de passe d'administration</td></tr>
     <tr><td>Bouton</td><td>Entrer</td></tr>
     <tr><td>Mauvais mot de passe</td><td>Ce n'est pas le bon mot de passe.</td></tr>
+    <tr><td>Trop d'essais</td><td>Beaucoup d'essais ratés : attends une minute avant de réessayer.</td></tr>
     <tr><td>Titre de la liste</td><td>Participants</td></tr>
     <tr><td>État</td><td>Mot de passe choisi · Pas encore de mot de passe</td></tr>
     <tr><td>Bouton</td><td>Effacer le mot de passe</td></tr>
@@ -218,6 +212,13 @@
     <tr><td>D13</td><td>Appareil visé</td><td>Mobile first : chaque écran conçu pour un téléphone en portrait</td><td>Demande de Yannick : les participants seront sur leur téléphone</td><td>Un affichage propre à l'ordinateur</td></tr>
     <tr><td>D14</td><td>Mot de passe oublié</td><td>Le dire sous « Voir mon tirage », dès l'arrivée ; l'erreur dit seulement de réessayer</td><td>Demande de Yannick : savoir quoi faire sans devoir se tromper d'abord</td><td>Ne le dire qu'après une erreur</td></tr>
   </table></div>
+</section>
+
+<section id="maquette">
+  <h2>Maquette cliquable</h2>
+  <p>Dans un écran de téléphone, sur un tirage fictif. Sur ton téléphone, ouvre-la en plein écran. Yannick et Léa ont déjà le mot de passe <code>sapin</code> ; les autres arrivent pour la première fois. Les réglages à côté de l'écran changent la date, simulent une coupure et ouvrent la page réservée.</p>
+  <div class="mockup"><iframe src="1-tirage-maquette.html" title="Maquette cliquable du site"></iframe></div>
+  <p><a href="1-tirage-maquette.html">Ouvrir la maquette en plein écran</a></p>
 </section>
 </main>
 </body>

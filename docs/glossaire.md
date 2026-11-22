@@ -6,7 +6,7 @@ la spec qui l'utilise.
 | Mot | Sens | Où |
 |---|---|---|
 | Secret santa | Le jeu : chacun offre un cadeau à une personne tirée au sort, sans savoir qui lui offre le sien. Le 25 décembre 2026 à midi. | Accueil |
-| Participant | Une des sept personnes du secret santa : Yannick, Léa, Christine, Guigui, Mamet, Anne, Loulou. Le site dit « prénom » à l'écran. | [Spec du tirage](specs/tirage.md) |
+| Participant | Une des sept personnes du secret santa : Yannick, Léa, Christine, Guigui, Mamet, Anne, Loulou. À l'écran, le site montre leurs prénoms ; seule la page réservée dit « Participants ». | Accueil, page réservée |
 | Tirage | Pour chaque participant, la personne à qui il offre son cadeau. Fait une seule fois, au hasard, par le site. « Ton tirage » : la personne à qui tu offres le tien. | Mot de passe, paquet, page réservée |
 | Mot de passe | Le mot qu'un participant choisit à sa première visite et redonne pour revoir son tirage. Majuscules, accents et espaces au bout ne comptent pas. | Mot de passe |
 | Paquet | Le paquet cadeau qu'on touche pour voir son tirage. | Paquet |
