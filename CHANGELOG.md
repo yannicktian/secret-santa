@@ -1,5 +1,17 @@
 # Changelog
 
+## 2026-11-22 · Epic 1 — Le tirage
+
+- Le site du secret santa, en production : accueil, mot de passe choisi à la première
+  visite, paquet à ouvrir, page réservée de Yannick (qui a choisi son mot de passe,
+  effacer un mot de passe, refaire le tirage). Tirage uniforme fait au premier mot de passe
+  choisi, empreintes scrypt, 5 essais ; pages statiques et fonctions Vercel, Redis Upstash.
+- En cours d'epic, à la demande de Yannick : Node 26 pour la CI et Vercel ; « Refaire le
+  tirage » (S8) ; indicateur de chargement puis toucher d'un prénom sans attente ; dépôt
+  rendu public pour débloquer GitHub Actions, l'adresse de production retirée du dépôt.
+- Après relecture : double appui, délai de 15 secondes des appels ; après l'audit de
+  sécurité : CI durcie. Bilan : `docs/bilans/1-tirage.md`.
+
 ## 2026-11-22 · Accueil : indicateur de chargement au toucher d'un prénom
 
 - Petite itération demandée par Yannick : au toucher d'un prénom, son bouton montre trois
