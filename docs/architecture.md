@@ -148,9 +148,8 @@ transformé à la lecture.
 | `fails:<id>` | Le nombre d'essais ratés de suite (`<id>` d'un participant, ou `admin`) | Sans fin | `INCR` à un essai raté ; `DEL` à un bon essai ou au blocage |
 | `lock:<id>` | `1` | 60 secondes | `SET … EX 60` au cinquième essai raté |
 
-Sur un déploiement de revue (Preview), chaque clé est préfixée par
-`preview:<VERCEL_GIT_COMMIT_SHA>:`, pour que chaque déploiement de revue parte d'une base
-vide dans la base de test.
+Seule la production a une base : `secret-santa-kv`, reliée au seul environnement
+Production. Les déploiements de revue (Preview) n'en ont pas (décision V7).
 
 ### Le tirage
 
@@ -186,8 +185,8 @@ en paramètre : `get(key)`, `mget(keys)`, `setIfAbsent(key, value)` (vrai si éc
 | Environnement | Stockage |
 |---|---|
 | `SECRET_SANTA_STORE=memory` et hors de Vercel (`VERCEL_ENV` absente) | Le double en mémoire, unique dans le processus |
-| Sur Vercel, ou sans `SECRET_SANTA_STORE` | Redis, par `Redis.fromEnv()` de `@upstash/redis`, qui lit `UPSTASH_REDIS_REST_URL` et `UPSTASH_REDIS_REST_TOKEN`, ou à défaut `KV_REST_API_URL` et `KV_REST_API_TOKEN` (lu dans le code de la version 1.41.0) |
-| Ni l'un ni l'autre | Erreur : la fonction répond 500, jamais un repli sur la mémoire |
+| Sur Vercel, ou sans `SECRET_SANTA_STORE` | Redis, par `Redis.fromEnv()` de `@upstash/redis`, qui lit `KV_REST_API_URL` et `KV_REST_API_TOKEN` quand `UPSTASH_REDIS_REST_URL` et `UPSTASH_REDIS_REST_TOKEN` manquent (lu dans le code de la version 1.41.0). L'intégration pose, en production seulement, `KV_REST_API_URL`, `KV_REST_API_TOKEN`, `KV_REST_API_READ_ONLY_TOKEN`, `KV_URL` et `REDIS_URL` (constaté le 22 novembre 2026) ; le site n'utilise que les deux premières |
+| Ni l'un ni l'autre, comme sur un déploiement de revue | Erreur : la fonction répond 500, jamais un repli sur la mémoire ; les pages statiques et `api/health.js` marchent quand même |
 
 Le double en mémoire a la même sémantique, durées comprises, avec une horloge qu'un test
 peut avancer.
@@ -240,16 +239,18 @@ cinq fois ; qui choisit le prénom d'un autre à sa première visite voit son ti
 ## Hébergement et déploiement
 
 - **Vercel**, offre gratuite, un projet `secret-santa` relié au repo GitHub, une seule
-  adresse racine. Fonctions en Node.js 24 (`engines.node` de `package.json`), région
-  `fra1` (Francfort) dans `vercel.json`, base Upstash créée dans la région la plus proche
-  que propose l'intégration (Francfort). `vercel.json` sert `public/` (`outputDirectory`),
+  adresse racine, sur le compte `yannicktians-projects` (offre Hobby). Fonctions en
+  Node.js 24 (`engines.node` de `package.json`), dans la région que `vercel.json` fixe :
+  celle de la base, relevée par la tâche 6 (la base a été créée dans la région par défaut
+  de l'intégration, non choisie). `vercel.json` sert `public/` (`outputDirectory`),
   sans commande de build, avec `cleanUrls` pour que `/reservee` serve `reservee.html`.
-- **Production** : chaque fusion sur `main` est déployée par l'intégration Git de Vercel.
-  Variables : celles de l'intégration Upstash (base de production), `ADMIN_PASSWORD`.
-- **Revue (Preview)** : chaque branche poussée. Variables : celles d'une seconde base
-  Upstash, de test, reliée au seul environnement Preview, et un `ADMIN_PASSWORD` fictif
-  posé par les agents. Les déploiements de revue sont protégés par l'authentification
-  Vercel ; les agents les appellent par `vercel curl`.
+- **Production** : chaque fusion sur `main` est déployée par l'intégration Git de Vercel,
+  une fois le projet relié au repo. Variables : celles de l'intégration Upstash (base
+  `secret-santa-kv`), `ADMIN_PASSWORD`.
+- **Revue (Preview)** : chaque branche poussée, sans base ni `ADMIN_PASSWORD` : seules les
+  pages statiques et `api/health.js` y marchent ; les fonctions qui lisent la base y
+  répondent 500. Les écrans et les fonctions se prouvent par les tests, sur le double en
+  mémoire, en local et dans l'intégration continue.
 - **Ce que les agents font sur la production** : seulement des lectures sans donnée,
   `GET /`, `GET /reservee`, `GET /api/health`. Ils n'appellent jamais `choose-password`,
   `open-gift` ni `reserved` sur la production : un mot de passe choisi par un agent ferait
@@ -260,13 +261,17 @@ cinq fois ; qui choisit le prénom d'un autre à sa première visite voit son ti
   sans jamais l'afficher. `.vercel/` est ignoré par git.
 - Le détail et les constats sont dans `docs/deploiement.md`, écrit par la tâche 6.
 
-Non vérifié, parce que propre à Vercel ou Upstash et sans jeton pour l'essayer : la
-signature Web des fonctions sans framework, `outputDirectory` et `cleanUrls` sur un projet
-sans framework, les noms exacts des variables posées par l'intégration Upstash, la
-disponibilité de `VERCEL_ENV` et `VERCEL_GIT_COMMIT_SHA` à l'exécution, la région
-Francfort pour Upstash, le nombre de bases gratuites d'Upstash, les quotas gratuits des
-deux services, et la conservation d'une base gratuite peu utilisée. La tâche 6 du
-découpage constate les quatre premiers ; la tâche 13 le reste de ce qui se constate.
+Constaté le 22 novembre 2026 : le projet `secret-santa` existe (créé par la CLI), la base
+`secret-santa-kv` est reliée à la seule production avec les variables ci-dessus, et
+l'offre gratuite d'Upstash n'accepte qu'une base par compte (une seconde a été refusée).
+
+Non vérifié, parce que propre à Vercel ou Upstash : la signature Web des fonctions sans
+framework, `outputDirectory` et `cleanUrls` sur un projet sans framework, la disponibilité
+de `VERCEL_ENV` à l'exécution et la région de la base, que la tâche 6 constate ; le
+comportement réel de Redis derrière les fonctions, que seule la production montre
+(lecture par la page réservée au constat humain de la tâche 13, première écriture au
+premier mot de passe choisi) ; les quotas gratuits des deux services et la conservation
+d'une base gratuite peu utilisée.
 
 ## Contrôles
 
@@ -298,8 +303,8 @@ découpage constate les quatre premiers ; la tâche 13 le reste de ce qui se con
 | Rien de secret n'est envoyé (sûreté) | `tests/securite/fuite.test.js` | Un parcours complet sur le double en mémoire, avec un tirage fictif et des mots de passe témoins ; chaque réponse (pages, scripts, JSON) est cherchée : ni empreinte, ni sel, ni mot de passe, ni `ADMIN_PASSWORD`, ni le tirage d'un autre, ni le tirage entier ; `public/` ne cite aucun nom de variable d'environnement |
 | Les écrans | `tests/e2e/*.spec.js` | Les mots exacts, les états, les tailles (48 et 56 pixels, texte de 20 pixels), 360 pixels sans défilement horizontal, appels interceptés par `page.route` selon le tableau des fonctions ; le parcours complet sans interception |
 
-Les tests n'utilisent que le double en mémoire, ou la base de test sur un déploiement de
-revue (tâche 13), jamais la base de production. Les tirages et les mots de passe des tests
+Les tests n'utilisent que le double en mémoire, en local et dans l'intégration continue,
+jamais la base de production. Les tirages et les mots de passe des tests
 sont fictifs.
 
 ## Règles pour les tâches
@@ -330,6 +335,7 @@ sont fictifs.
 
 ### Validées par Yannick le 22 novembre 2026
 
+
 | N° | Point | Décision |
 |---|---|---|
 | V1 | Hébergement | Vercel, une seule adresse racine |
@@ -337,7 +343,9 @@ sont fictifs.
 | V3 | Mots de passe | Empreinte scrypt de `node:crypto`, salée, sur le mot de passe normalisé (S3) ; jamais en clair |
 | V4 | Mot de passe d'administration | Variable d'environnement Vercel posée par Yannick ; aucun agent ne le connaît |
 | V5 | Simplicité | Le plus simple possible : pas de comptes, pas de session durable (S5) |
-| V6 | Restrictions | Spec, architecture et découpage validés par Yannick ; tâches fusionnées après relecture, chemins sensibles compris ; mise en production par les agents à la fusion ; mots de passe et tirage réels, base de production et `.env` interdits aux agents ; tests sur un double en mémoire ou une base de test |
+| V6 | Restrictions | Spec, architecture et découpage validés par Yannick ; tâches fusionnées après relecture, chemins sensibles compris ; mise en production par les agents à la fusion ; mots de passe et tirage réels, base de production et `.env` interdits aux agents ; tests sur un double en mémoire |
+| V7 | Tester sans la base de production | Pas de base sur les déploiements de revue : l'offre gratuite d'Upstash n'accepte qu'une base. Tests sur le double en mémoire, en local et dans l'intégration continue ; seule la production a Redis ; en production, les agents ne font que des lectures. Écartées : une base partagée avec des clés préfixées par déploiement, l'offre payante |
+| V8 | JavaScript et navigateurs visés | JavaScript exigé, navigateurs qui lisent les modules ES (téléphones depuis 2019 environ, navigateurs intégrés de WhatsApp et des messageries compris), sans version de secours ni message `<noscript>`. Écartée : une version sans JavaScript |
 
 ### Proposées par l'architecte, à valider avec cette architecture
 
@@ -350,9 +358,7 @@ sont fictifs.
 | A5 | Comment compter les essais ratés ? | Compteur et clé de blocage de 60 secondes · une seule clé dont la durée démarre au cinquième essai · `@upstash/ratelimit` | **Compteur et clé de blocage** : chaque écriture est atomique ; une fonction arrêtée entre deux commandes ne bloque jamais un participant pour toujours (au pire, le blocage suivant vient un essai plus tôt). Une seule clé pourrait rester bloquée sans durée ; `@upstash/ratelimit` compte des essais par fenêtre, pas « 5 de suite, remis à zéro par un bon » |
 | A6 | Comment protéger la page réservée sans session ? | Le mot de passe d'administration envoyé à chaque appel, gardé en mémoire par la page · un jeton signé de courte durée · un cookie de session | **À chaque appel** : aucun jeton ni secret de signature à gérer ; rien ne survit à la page (S5) ; chaque appel passe par la règle des 5 essais |
 | A7 | Adresse de la page réservée | `/reservee` · une adresse longue et difficile à deviner | **`/reservee`** : le mot de passe protège la page, pas l'adresse ; Yannick la retient |
-| A8 | Comment tester sans la base de production ? | Double en mémoire pour tous les tests, plus une base Upstash de test sur les déploiements de revue · double seul · base de test seule | **Double et base de test** : le double rend les tests rapides et sans réseau ; la base de test, reliée au seul environnement Preview, prouve une fois le vrai comportement de Redis (tâche 13). Elle demande à Yannick une seconde base Upstash |
 | A9 | Intégration continue ? | GitHub Actions · aucune (contrôles en local) | **GitHub Actions** : les agents fusionnent sans humain ; l'intégration continue est la preuve que l'orchestrateur attend avant chaque fusion. Repo privé : les minutes gratuites de GitHub suffisent (non vérifié) |
-| A10 | JavaScript et navigateurs visés | JavaScript exigé, navigateurs qui lisent les modules ES (téléphones depuis 2019 environ, navigateurs intégrés de WhatsApp et des messageries compris) · une version sans JavaScript | **JavaScript exigé**, sans version de secours ni message `<noscript>` : il est actif par défaut sur tous les téléphones, et une version sans JavaScript doublerait le travail. Question à Yannick : un participant a-t-il un téléphone de plus de six ans ? |
 | A11 | Polices | Google Fonts, comme la maquette · fichiers des polices servis par le site | **Google Fonts** : rien à versionner ; l'adresse IP du visiteur est vue par Google, ce qui est acceptable ici |
 
 ### Points que la spec ne tranche pas, tranchés ici
@@ -372,8 +378,7 @@ sont fictifs.
   affiche un autre nombre de jours.
 - **Une seule base de production**, sans sauvegarde : si elle était perdue, le tirage le
   serait aussi, et un nouveau serait fait au premier mot de passe choisi. Upstash garde les
-  données sur disque ; ce qu'il fait d'une base gratuite peu utilisée n'est pas vérifié
-  (tâche 13).
+  données sur disque ; ce qu'il fait d'une base gratuite peu utilisée n'est pas vérifié.
 - **Pas de journal** des actions ; les journaux de Vercel ne reçoivent ni mot de passe, ni
   empreinte, ni tirage.
 - **Pas de domaine propre** : l'adresse est celle que Vercel donne au projet.

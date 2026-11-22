@@ -7,8 +7,8 @@ veut dire que ces tâches sont fusionnées. « Fini quand » se prouve dans la p
 « Constat humain » est ce que Yannick constate après la fusion, avant que l'issue soit
 close. Taille : 400 lignes modifiées au plus, hors tests et `package-lock.json`.
 
-Le risque passe en premier. Le socle (1) seul, puis, dès que Yannick a fait ses
-prérequis, le premier déploiement (6), qui constate ce que l'architecture suppose de
+Le risque passe en premier. Le socle (1) seul, puis, dès que le projet Vercel est relié
+au repo (prérequis A), le premier déploiement (6), qui constate ce que l'architecture suppose de
 Vercel et de l'intégration Upstash : s'il le contredit, seules les tâches 1 et 6 sont à
 reprendre. Les règles du domaine (2, 3, 4) et l'accueil (5) partent en même temps que lui.
 Personne n'a le lien avant la tâche 13 : entre deux tâches, aucun participant ne perd rien.
@@ -18,10 +18,10 @@ Personne n'a le lien avant la tâche 13 : entre deux tâches, aucun participant 
 | Lot | Tâches, parties ensemble | Attend |
 |---|---|---|
 | 1 | 1 | — |
-| 2 | 2, 3, 4, 5, 6 | la tâche 1 ; pour la 6, aussi les prérequis humains 1 à 4 |
+| 2 | 2, 3, 4, 5, 6 | la tâche 1 ; pour la 6, aussi le prérequis humain A |
 | 3 | 7, 8, 9, 10, 11 | 7 : 2, 3, 4 · 8 : 2, 3 · 9, 10, 11 : 5 |
 | 4 | 12 | 7 à 11 |
-| 5 | 13 | 6 et 12 ; les prérequis humains 5 et 6 |
+| 5 | 13 | 6 et 12 ; le prérequis humain B |
 
 Une tâche part dès que ce qu'elle attend est fusionné, sans attendre le reste de son lot.
 Aucun fichier n'est modifié par deux tâches d'un même lot ; le README l'est par les
@@ -34,14 +34,14 @@ tâches 1, 6 et 13, qui sont de lots différents.
 | 3 | Le tirage | 1 | oui |
 | 4 | Mots de passe des participants | 1 | oui |
 | 5 | Accueil, style et site injoignable | 1 | non |
-| 6 | Premier déploiement | 1, prérequis 1 à 4 | non (doc) |
+| 6 | Premier déploiement | 1, prérequis A | non (doc) |
 | 7 | Fonctions du participant | 2, 3, 4 | oui |
 | 8 | Fonction de la page réservée | 2, 3 | oui |
 | 9 | Écrans du mot de passe | 5 | non |
 | 10 | Écran du paquet | 5 | non |
 | 11 | Écrans de la page réservée | 5 | non |
 | 12 | Parcours complet et test de fuite | 7, 8, 9, 10, 11 | oui |
-| 13 | Mise en ligne | 6, 12, prérequis 5 et 6 | non (doc) |
+| 13 | Mise en ligne | 6, 12, prérequis B | non (doc) |
 
 Les chemins sensibles sont groupés dans les tâches du serveur (1 à 4, 7, 8, 12) ; les
 écrans (5, 9, 10, 11) n'en touchent aucun. Les restrictions du projet fusionnent les unes
@@ -49,47 +49,30 @@ comme les autres après relecture, sans attendre un humain.
 
 ## Prérequis humains
 
-À faire par Yannick, une fois, dans l'ordre. Ils ne bloquent que les tâches indiquées ; les
-autres avancent sans eux.
+Fait, constaté le 22 novembre 2026 : comptes relevés (un seul compte Vercel,
+`yannicktians-projects`, offre Hobby, aucun projet secret-santa ni intégration avant) ;
+projet Vercel `secret-santa` créé par la CLI ; jeton Vercel des agents posé dans
+`~/.config/secret-santa/vercel.env` ; Upstash Redis `secret-santa-kv` installé et relié à
+la seule production ; évolution de factory
+[#57](https://github.com/yannicktian/factory/pull/57) (restrictions de secret-santa)
+fusionnée.
 
-1. **Relever l'état des comptes** : dire dans l'issue de l'epic s'il existe déjà un projet
-   Vercel relié au repo `yannicktian/secret-santa`, ou une base Upstash pour ce projet, et
-   sous quel compte Vercel (personnel ou équipe) le projet doit vivre. Un ancien projet
-   relié au repo se supprime avant d'en créer un nouveau. Débloque : 6.
-2. **Créer le projet Vercel** `secret-santa` en important le repo GitHub
-   `yannicktian/secret-santa`, offre gratuite, sans changer les réglages proposés
-   (`vercel.json` les donne). Débloque : 6.
-3. **Donner un jeton Vercel aux agents** : créer un jeton pour le compte du projet, puis,
-   dans un terminal d'orca-server :
+Restent, à faire par Yannick. Ils ne bloquent que la tâche indiquée ; les autres avancent
+sans eux.
 
-   ```sh
-   secret-env ~/.config/secret-santa/vercel.env VERCEL_TOKEN
-   ```
+- **A. Relier le projet Vercel au repo** : donner à l'application Vercel de GitHub l'accès
+  au dépôt `yannicktian/secret-santa` (`vercel git connect` échoue tant qu'elle ne l'a
+  pas). L'orchestrateur relance ensuite `vercel git connect`. Débloque : 6, donc la mise
+  en production à chaque fusion.
+- **B. Poser le mot de passe d'administration** en production, de type sensible, sans le
+  donner à personne : depuis les réglages du projet sur le site de Vercel, ou dans un
+  terminal, depuis un dossier relié au projet :
 
-   Débloque : 6, 13.
-4. **Installer Upstash Redis sur le projet** depuis la Vercel Marketplace : une base
-   `secret-santa`, région Francfort (`eu-central-1`) si elle est proposée, offre gratuite,
-   reliée au seul environnement **Production**. La CLI (`vercel integration add upstash`)
-   pourrait le faire, mais l'installation accepte les conditions d'Upstash au nom du
-   compte : c'est une action humaine. Débloque : 6.
-5. **Créer la base de test** : une seconde base Upstash, `secret-santa-test`, reliée au seul
-   environnement **Preview**. Si l'offre gratuite n'en permet qu'une, le dire dans l'issue
-   de l'epic : la tâche 13 vérifiera Redis seulement par la lecture du déploiement de
-   production (moins de preuve, pas de blocage). Débloque : 13.
-6. **Poser le mot de passe d'administration** en production, de type sensible, sans le
-   donner à personne. Dans un terminal, depuis le dossier du repo relié au projet :
+  ```sh
+  npx vercel env add ADMIN_PASSWORD production --sensitive
+  ```
 
-   ```sh
-   npx vercel env add ADMIN_PASSWORD production --sensitive
-   ```
-
-   La CLI demande la valeur (non essayé : sans jeton, l'architecte n'a pas pu lancer la
-   commande ; elle demande d'être connecté à Vercel et relié au projet). À défaut, poser la
-   variable dans les réglages du projet sur le site de Vercel, pour la seule production.
-   Débloque : 13.
-7. **Valider l'évolution de factory** [#57](https://github.com/yannicktian/factory/pull/57)
-   (les restrictions de secret-santa), déjà listée dans l'issue de l'epic. Débloque : la
-   fusion des tâches sans validation humaine.
+  La CLI demande la valeur (commande non essayée). Débloque : 13.
 
 Constat humain à la fin (tâche 13) : ouvrir la page réservée de la production avec le mot
 de passe d'administration, voir les sept participants « Pas encore de mot de passe »,
@@ -103,7 +86,7 @@ puis envoyer le lien.
   `biome.json`, `playwright.config.js` (serveur `scripts/dev-server.js` avec
   `SECRET_SANTA_STORE=memory` et un `ADMIN_PASSWORD` fictif, projets 360 et 1280 pixels), `.gitignore` (`node_modules/`,
   `.vercel/`, `captures/`, `test-results/`, `playwright-report/`, `.env*`), `vercel.json`
-  (`outputDirectory`, `cleanUrls`, région `fra1`, en-têtes de sécurité, `no-store` sur
+  (`outputDirectory`, `cleanUrls`, région `fra1` que la tâche 6 aligne sur celle de la base, en-têtes de sécurité, `no-store` sur
   `/` et `/reservee`), `.github/workflows/check.yml`, `scripts/dev-server.js`,
   `lib/http.js`, `api/health.js`, `public/index.html` (titre « Secret santa de Noël »
   seul, que la tâche 5 remplace), `README.md` (section « Développer » : installer,
@@ -111,7 +94,7 @@ puis envoyer le lien.
 - **Tests** : `tests/unit/http.test.js` : corps de plus de 2 Ko refusé (413), type autre
   que JSON refusé (415), réponse en `no-store` ; `tests/unit/health.test.js` :
   `store` vaut `missing` sans variables, `memory` avec `SECRET_SANTA_STORE=memory`,
-  `redis` avec les variables Upstash (valeurs fictives), `reservedPage` suit la présence
+  `redis` avec `KV_REST_API_URL` et `KV_REST_API_TOKEN` (valeurs fictives), `reservedPage` suit la présence
   d'`ADMIN_PASSWORD`, et la réponse ne contient aucune valeur de variable ; un test
   Playwright qui ouvre `/` à 360 pixels.
 - **Fini quand** : `npm run check` et `npm run test:e2e` passent en local et dans GitHub
@@ -127,8 +110,9 @@ puis envoyer le lien.
   version Redis, celle-ci avec un `fetch` simulé qui vérifie les commandes envoyées
   (`set … nx`, `set … ex 60`, `incr`, `mget`, `del`) et rend les réponses de Redis ; le
   double fait expirer une clé à 60 secondes d'horloge simulée ; `getStore()` refuse la
-  mémoire sur Vercel (`VERCEL_ENV` posée) et lève une erreur sans variables Redis ; le
-  préfixe `preview:<sha>:` en Preview, aucun en production.
+  mémoire sur Vercel (`VERCEL_ENV` posée), crée le client Redis avec les seules
+  `KV_REST_API_URL` et `KV_REST_API_TOKEN` (valeurs fictives), et lève une erreur sans
+  variables Redis.
   `tests/unit/attempts.test.js` : 4 ratés puis un bon remettent à zéro ; le cinquième raté
   bloque et répond `locked` ; pendant la minute, tout essai répond `locked` sans
   vérification ; 60 secondes après, 5 nouveaux essais ; deux participants ne se bloquent
@@ -187,14 +171,15 @@ puis envoyer le lien.
   de la CLI, variables attendues, ce qui a été constaté), `README.md` (adresse de
   production), `docs/architecture.md` seulement si un constat la contredit, signalé dans
   la PR.
-- **Tests** : sur le déploiement de production de `main` : `GET /` sert l'écran de la
-  tâche 1 ou 5, `GET /api/health` répond `store: "redis"` ; les en-têtes de `vercel.json`
-  sont présents ; `GET /package.json` et `GET /lib/store.js` répondent 404 ; noms (jamais
-  valeurs) des variables de chaque environnement par `vercel env ls`.
+- **Tests** : sur le déploiement de production de `main`, fait par l'intégration Git :
+  `GET /` sert l'écran de la tâche 1 ou 5, `GET /api/health` répond `store: "redis"` ; les
+  en-têtes de `vercel.json` sont présents ; `GET /package.json` et `GET /lib/store.js`
+  répondent 404 ; la région de la base, relevée sans lire de donnée, est celle de
+  `vercel.json` (sinon `vercel.json` la prend).
 - **Fini quand** : `docs/deploiement.md` dit, pour chaque point « non vérifié » de
   l'architecture que ce déploiement montre (signature des fonctions, dossier servi,
-  `cleanUrls`, noms des variables d'Upstash, `VERCEL_ENV` à l'exécution), ce qui a été
-  constaté. Aucun appel à `choose-password`, `open-gift` ni `reserved` en production.
+  `cleanUrls`, `VERCEL_ENV` à l'exécution, région), ce qui a été constaté. Aucun appel à
+  `choose-password`, `open-gift` ni `reserved` en production.
 
 ## 7. Fonctions du participant
 
@@ -293,15 +278,12 @@ puis envoyer le lien.
 ## 13. Mise en ligne
 
 - **Fichiers** : `docs/deploiement.md` (constats), `README.md` (le lien à envoyer).
-- **Tests** : sur un déploiement de revue relié à la base de test, avec un
-  `ADMIN_PASSWORD` fictif posé par l'agent pour Preview seulement : le parcours de la
-  tâche 12 (`PLAYWRIGHT_BASE_URL` vers le déploiement, par `vercel curl` ou le jeton de
-  contournement de la protection) ; deux `choose-password` simultanés donnent un seul
-  tirage ; cinq mauvais essais bloquent une minute. Sur la production : seulement `GET /`,
-  `GET /reservee`, `GET /api/health` (`store: "redis"`, `reservedPage: true`).
-- **Fini quand** : `docs/deploiement.md` dit ce qui a été constaté pour chaque point
-  « non vérifié » restant de l'architecture ; la base de test garde les clés du
-  déploiement de revue, aucune clé n'est écrite en production.
+- **Tests** : sur la production, seulement des lectures : `GET /`, `GET /reservee`
+  (titre « Page réservée »), `GET /api/health` (`store: "redis"`, `reservedPage: true`) ;
+  les contrôles de la tâche 12 passent sur `main`.
+- **Fini quand** : `docs/deploiement.md` dit ce qui a été constaté en production, et ce
+  qui ne le sera qu'au constat humain et au premier usage (Redis lu par la page réservée,
+  puis écrit au premier mot de passe choisi) ; aucun agent n'a écrit dans la base.
 - **Constat humain** : Yannick ouvre `/reservee` en production, entre son mot de passe
   d'administration, voit les sept participants « Pas encore de mot de passe », puis
   envoie le lien. Le premier participant qui choisit son mot de passe fait le vrai
@@ -317,7 +299,7 @@ puis envoyer le lien.
 | S4, mots du paquet, moins d'animations | 10 |
 | S5, rien retenu, retour du navigateur | 5 (accueil, stockage), 10 (paquet, historique), 11 (page réservée) |
 | S6, mots de la page réservée, 5 essais, effacement sans changer le tirage | 2, 8, 11, 12 |
-| S7, une seule fois, au hasard, test statistique, jamais montré en entier | 3, 7, 8, 12, 13 |
+| S7, une seule fois, au hasard, test statistique, jamais montré en entier | 3, 7, 8, 12 |
 | « Partout » : site injoignable, « Réessayer » | 5 (bandeau), 9, 10, 11 (sur leurs appels) |
 | États vides et cassés : personne n'a validé, mauvais prénom, mot de passe oublié, Yannick oublie le sien | 7, 9, 12 |
 | Affichage : mobile first, 48 et 56 pixels, 20 pixels, AA, clavier ouvert, un seul thème, style jeu vidéo | 5 (règles du style), 9, 10, 11 (leurs écrans) |

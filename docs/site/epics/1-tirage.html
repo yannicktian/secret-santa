@@ -288,12 +288,12 @@ lock:guigui     1   (s'efface dans 60 s)</pre></div>
   <p>Les tâches d'un lot partent ensemble, chacune dès que ce qu'elle attend est fusionné. Le découpage fait foi : <a href="https://github.com/yannicktian/secret-santa/blob/main/docs/plans/tirage.md">docs/plans/tirage.md</a>.</p>
   <div class="lots">
     <div class="lot"><strong>Lot 1</strong><span>1 · Socle, contrôles et santé</span><span class="wait-for">Attend : rien</span></div>
-    <div class="lot"><strong>Lot 2</strong><span>2 · Stockage et essais ratés</span><span>3 · Le tirage</span><span>4 · Mots de passe</span><span>5 · Accueil et style</span><span>6 · Premier déploiement</span><span class="wait-for">Attend : 1 ; pour la 6, les prérequis de Yannick</span></div>
+    <div class="lot"><strong>Lot 2</strong><span>2 · Stockage et essais ratés</span><span>3 · Le tirage</span><span>4 · Mots de passe</span><span>5 · Accueil et style</span><span>6 · Premier déploiement</span><span class="wait-for">Attend : 1 ; pour la 6, le projet Vercel relié au repo</span></div>
     <div class="lot"><strong>Lot 3</strong><span>7 · Fonctions du participant</span><span>8 · Fonction de la page réservée</span><span>9 · Écrans du mot de passe</span><span>10 · Écran du paquet</span><span>11 · Écrans de la page réservée</span><span class="wait-for">Attend : 7 ← 2, 3, 4 · 8 ← 2, 3 · 9, 10, 11 ← 5</span></div>
     <div class="lot"><strong>Lot 4</strong><span>12 · Parcours complet et test de fuite</span><span class="wait-for">Attend : 7 à 11</span></div>
-    <div class="lot"><strong>Lot 5</strong><span>13 · Mise en ligne</span><span class="wait-for">Attend : 6, 12, la base de test et le mot de passe d'administration</span></div>
+    <div class="lot"><strong>Lot 5</strong><span>13 · Mise en ligne</span><span class="wait-for">Attend : 6, 12 et le mot de passe d'administration</span></div>
   </div>
-  <p>Ce que Yannick fait d'abord : dire quels comptes existent, créer le projet Vercel, donner un jeton aux agents, installer Upstash (une base de production, une base de test), poser le mot de passe d'administration. À la fin, il ouvre la page réservée en production, voit les sept « Pas encore de mot de passe », et envoie le lien.</p>
+  <p>Ce qui reste à Yannick : donner à l'application Vercel de GitHub l'accès au repo, pour que chaque fusion soit mise en production (tâche 6), et poser le mot de passe d'administration en production (tâche 13). À la fin, il ouvre la page réservée en production, voit les sept « Pas encore de mot de passe », et envoie le lien. Les tests tournent sur un double de la base en mémoire ; seule la production a Redis.</p>
 </section>
 </main>
 </body>

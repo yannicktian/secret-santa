@@ -141,7 +141,7 @@
     <tr><td><code>fails:&lt;id&gt;</code></td><td>Essais ratés de suite (participant ou <code>admin</code>)</td><td>Sans fin</td><td><code>INCR</code> ; <code>DEL</code> au bon essai ou au blocage</td></tr>
     <tr><td><code>lock:&lt;id&gt;</code></td><td><code>1</code></td><td>60 secondes</td><td><code>SET … EX 60</code> au cinquième raté</td></tr>
   </table></div>
-  <p>Sur un déploiement de revue, chaque clé est préfixée par <code>preview:&lt;commit&gt;:</code> : chaque revue part d'une base vide, dans la base de test.</p>
+  <p>Seule la production a une base : <code>secret-santa-kv</code>, reliée au seul environnement Production. Les déploiements de revue n'en ont pas (décision V7).</p>
   <h3>Le tirage</h3>
   <ul>
     <li>Mélange de Fisher-Yates avec <code>crypto.randomInt</code>, recommencé tant que quelqu'un se tire lui-même : chacun des 1 854 tirages possibles pour sept participants a la même chance, paires réciproques comprises. 2,7 mélanges en moyenne.</li>
@@ -154,7 +154,7 @@
     <li><strong>Empreinte</strong> : scrypt de <code>node:crypto</code>, sel de 16 octets, N = 16384, r = 8, p = 1, 32 octets (74 ms constatés). Vérification par <code>timingSafeEqual</code>. Jamais en clair, jamais dans un journal.</li>
   </ul>
   <h3>Le stockage</h3>
-  <p>Six opérations, reçues en paramètre par les règles du domaine : <code>get</code>, <code>mget</code>, <code>setIfAbsent</code>, <code>setWithExpiry</code>, <code>incr</code>, <code>del</code>. Le double en mémoire seulement avec <code>SECRET_SANTA_STORE=memory</code> et hors de Vercel ; sinon Redis par <code>Redis.fromEnv()</code> (<code>UPSTASH_REDIS_REST_URL</code> et <code>…_TOKEN</code>, ou <code>KV_REST_API_URL</code> et <code>…_TOKEN</code>, lu dans le code de la version 1.41.0) ; sans l'un ni l'autre, une erreur, jamais un repli sur la mémoire.</p>
+  <p>Six opérations, reçues en paramètre par les règles du domaine : <code>get</code>, <code>mget</code>, <code>setIfAbsent</code>, <code>setWithExpiry</code>, <code>incr</code>, <code>del</code>. Le double en mémoire seulement avec <code>SECRET_SANTA_STORE=memory</code> et hors de Vercel ; sinon Redis par <code>Redis.fromEnv()</code>, qui lit <code>KV_REST_API_URL</code> et <code>KV_REST_API_TOKEN</code> (lu dans le code de la version 1.41.0). L'intégration pose, en production seulement, <code>KV_REST_API_URL</code>, <code>KV_REST_API_TOKEN</code>, <code>KV_REST_API_READ_ONLY_TOKEN</code>, <code>KV_URL</code> et <code>REDIS_URL</code> (constaté) ; le site n'utilise que les deux premières. Sans base, comme sur une revue, une erreur, jamais un repli sur la mémoire ; les pages et <code>api/health</code> marchent quand même.</p>
 </section>
 
 <section>
@@ -187,13 +187,14 @@
 <section>
   <h2>Hébergement et déploiement</h2>
   <ul>
-    <li><strong>Vercel</strong>, offre gratuite, projet <code>secret-santa</code> relié au repo, une seule adresse. Node.js 24, région <code>fra1</code> (Francfort), base Upstash à Francfort. <code>vercel.json</code> sert <code>public/</code> sans build, avec <code>cleanUrls</code> pour <code>/reservee</code>.</li>
+    <li><strong>Vercel</strong>, offre gratuite, projet <code>secret-santa</code> sur le compte <code>yannicktians-projects</code>, relié au repo, une seule adresse. Node.js 24, fonctions dans la région de la base (région par défaut de l'intégration, relevée par la tâche 6). <code>vercel.json</code> sert <code>public/</code> sans build, avec <code>cleanUrls</code> pour <code>/reservee</code>.</li>
     <li><strong>Production</strong> : chaque fusion sur <code>main</code>. Variables : celles de l'intégration Upstash, <code>ADMIN_PASSWORD</code>.</li>
-    <li><strong>Revue</strong> : chaque branche poussée, sur une seconde base Upstash, de test, reliée au seul environnement Preview, avec un mot de passe d'administration fictif. Protégée par l'authentification Vercel.</li>
+    <li><strong>Revue</strong> : chaque branche poussée, sans base ni mot de passe d'administration : seules les pages et <code>api/health</code> y marchent. Écrans et fonctions se prouvent par les tests, sur le double en mémoire.</li>
     <li><strong>Sur la production, les agents ne font que lire sans donnée</strong> : <code>GET /</code>, <code>GET /reservee</code>, <code>GET /api/health</code>. Jamais <code>choose-password</code>, <code>open-gift</code> ni <code>reserved</code> : un mot de passe choisi par un agent ferait le vrai tirage.</li>
     <li><strong>Jeton</strong> : la CLI Vercel avec <code>VERCEL_TOKEN</code>, chargé depuis <code>~/.config/secret-santa/vercel.env</code>, jamais affiché.</li>
   </ul>
-  <p><strong>Non vérifié</strong> (propre à Vercel ou Upstash, sans jeton pour l'essayer) : la signature Web des fonctions sans framework, <code>outputDirectory</code> et <code>cleanUrls</code>, les noms des variables de l'intégration, <code>VERCEL_ENV</code> et <code>VERCEL_GIT_COMMIT_SHA</code> à l'exécution, la région Francfort d'Upstash, le nombre de bases gratuites, les quotas, la conservation d'une base gratuite peu utilisée. Les tâches 6 et 13 le constatent.</p>
+  <p><strong>Constaté</strong> le 22 novembre 2026 : le projet existe, la base est reliée à la seule production avec les variables ci-dessus, et l'offre gratuite d'Upstash n'accepte qu'une base.</p>
+  <p><strong>Non vérifié</strong> : la signature Web des fonctions sans framework, <code>outputDirectory</code> et <code>cleanUrls</code>, <code>VERCEL_ENV</code> à l'exécution, la région de la base (tâche 6) ; Redis derrière les fonctions, que seule la production montre (lu au constat humain de la tâche 13, écrit au premier mot de passe choisi) ; les quotas, la conservation d'une base gratuite peu utilisée.</p>
 </section>
 
 <section>
@@ -212,7 +213,7 @@
     <tr><td>Rien de secret envoyé</td><td>Un parcours complet avec des mots de passe témoins : aucune réponse ne contient d'empreinte, de sel, de mot de passe, <code>ADMIN_PASSWORD</code>, ni le tirage d'un autre</td></tr>
     <tr><td>Les écrans</td><td>Mots exacts, états, tailles, 360 pixels, appels interceptés ; puis le parcours complet sans interception</td></tr>
   </table></div>
-  <p>Jamais la base de production : le double en mémoire, ou la base de test sur un déploiement de revue. Tirages et mots de passe fictifs.</p>
+  <p>Jamais la base de production : le double en mémoire, en local et dans l'intégration continue. Tirages et mots de passe fictifs.</p>
 </section>
 
 <section>
@@ -236,6 +237,8 @@
     <li><strong>V4</strong> Mot de passe d'administration en variable Vercel posée par Yannick ; aucun agent ne le connaît.</li>
     <li><strong>V5</strong> Le plus simple : pas de comptes, pas de session durable.</li>
     <li><strong>V6</strong> Restrictions : spec, architecture et découpage validés par Yannick ; fusion après relecture, chemins sensibles compris ; mise en production à la fusion ; réel, production et <code>.env</code> interdits aux agents.</li>
+    <li><strong>V7</strong> Pas de base sur les revues (l'offre gratuite d'Upstash n'en accepte qu'une) : tests sur le double en mémoire, en local et dans l'intégration continue ; seule la production a Redis ; en production, les agents ne font que lire. Écartées : une base partagée avec des clés préfixées, l'offre payante.</li>
+    <li><strong>V8</strong> JavaScript exigé, navigateurs qui lisent les modules ES (téléphones depuis 2019 environ). Écartée : une version sans JavaScript.</li>
   </ul>
   <h3>Proposées par l'architecte</h3>
   <div class="table"><table>
@@ -247,9 +250,7 @@
     <tr><td>A5</td><td>Essais ratés</td><td>Compteur et clé de blocage de 60 secondes</td><td>Une seule clé, <code>@upstash/ratelimit</code></td></tr>
     <tr><td>A6</td><td>Page réservée sans session</td><td>Mot de passe envoyé à chaque appel, gardé par la page</td><td>Jeton signé, cookie</td></tr>
     <tr><td>A7</td><td>Adresse de la page réservée</td><td><code>/reservee</code></td><td>Adresse difficile à deviner</td></tr>
-    <tr><td>A8</td><td>Tester sans la production</td><td>Double en mémoire, plus une base de test sur les revues</td><td>Double seul, base de test seule</td></tr>
     <tr><td>A9</td><td>Intégration continue</td><td>GitHub Actions</td><td>Contrôles en local seulement</td></tr>
-    <tr><td>A10</td><td>JavaScript et navigateurs</td><td>JavaScript exigé, modules ES (téléphones depuis 2019 environ) ; question : un participant a-t-il un téléphone de plus de six ans ?</td><td>Version sans JavaScript</td></tr>
     <tr><td>A11</td><td>Polices</td><td>Google Fonts</td><td>Polices servies par le site</td></tr>
   </table></div>
   <h3>Points que la spec ne tranche pas</h3>
