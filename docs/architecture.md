@@ -275,7 +275,8 @@ d'une base gratuite peu utilisée.
 ## Contrôles
 
 - `npm run check` : `biome check .` (lint et format), `tsc` (JavaScript vérifié par
-  `checkJs`, JSDoc, mode strict, sans émission), `node --test tests/unit tests/securite`.
+  `checkJs`, JSDoc, mode strict, sans émission), `node --test` sur les fichiers
+  `*.test.js` de `tests/unit/` et `tests/securite/`.
 - `npm run test:e2e` : Playwright (Chromium) contre `scripts/dev-server.js` sur le double
   en mémoire, aux largeurs 360 et 1280 pixels. Avec `CAPTURES=1`, chaque test d'écran
   enregistre ses captures dans `captures/`, ignoré par git, qui se régénère.
