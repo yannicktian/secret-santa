@@ -165,7 +165,7 @@ test.describe("S2, first time", () => {
     await expect(page.getByLabel("Ton mot de passe")).toHaveCount(0);
     await expect(page.locator("main input")).toHaveCount(0);
     await expect(page.getByText("Qui es-tu ?")).toHaveCount(0);
-    await expect(page.locator("main .btn").first()).toBeVisible();
+    await expect(page.getByText("Ton tirage est dans ce paquet.")).toBeVisible();
     expect(writes(calls)).toEqual([
       { path: "/api/choose-password", body: { participant: "lea", password: "Renne" } },
     ]);
