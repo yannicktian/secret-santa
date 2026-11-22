@@ -39,7 +39,7 @@
     <text class="s" x="298" y="112">/ et /reservee, sans build</text>
     <rect class="hot" x="284" y="146" width="202" height="118" rx="6"/>
     <text class="t" x="298" y="170">Fonctions</text>
-    <text class="m" x="298" y="190">api/participant</text>
+    <text class="m" x="298" y="190">api/participant(s)</text>
     <text class="m" x="298" y="206">api/choose-password</text>
     <text class="m" x="298" y="222">api/open-gift</text>
     <text class="m" x="298" y="238">api/reserved</text>
@@ -64,7 +64,7 @@
   </svg></div>
   <ul>
     <li><strong>Pages statiques</strong> dans <code>public/</code>, servies telles quelles : pas de framework, pas de bundler, pas de build. Le JavaScript du navigateur est en modules ES natifs.</li>
-    <li><strong>Quatre fonctions Vercel</strong> dans <code>api/</code> (plus <code>api/health.js</code>), en JavaScript, qui appellent les règles du domaine de <code>lib/</code>. Elles seules lisent et écrivent la base.</li>
+    <li><strong>Cinq fonctions Vercel</strong> dans <code>api/</code> (plus <code>api/health.js</code>), en JavaScript, qui appellent les règles du domaine de <code>lib/</code>. Elles seules lisent et écrivent la base.</li>
     <li><strong>Une base Redis Upstash</strong>, installée sur le projet Vercel par la Vercel Marketplace : le tirage, les empreintes des mots de passe, les compteurs d'essais.</li>
     <li><strong>Aucune session</strong> : le navigateur ne garde rien entre deux visites (S5). Chaque appel qui donne un tirage ou ouvre la page réservée porte le mot de passe, vérifié à chaque fois.</li>
   </ul>
@@ -76,12 +76,13 @@
     <tr><th>Emplacement</th><th>Rôle</th></tr>
     <tr><td><code>public/index.html</code></td><td>L'accueil et le conteneur des écrans du participant</td></tr>
     <tr><td><code>public/style.css</code></td><td>Le style de tous les écrans, repris de la maquette</td></tr>
-    <tr><td><code>public/app.js</code></td><td>L'état en mémoire, l'accueil (S1), le passage d'un écran à l'autre sans historique (S5), les appels par <code>call.js</code></td></tr>
-    <tr><td><code>public/call.js</code></td><td>Les appels, l'attente d'une réponse et le bandeau « Oups… » avec « Réessayer », pour l'accueil et la page réservée</td></tr>
+    <tr><td><code>public/app.js</code></td><td>L'état en mémoire, l'accueil (S1) et les états des participants qu'il demande, le passage d'un écran à l'autre sans historique (S5), les appels par <code>call.js</code></td></tr>
+    <tr><td><code>public/call.js</code></td><td>Les appels, l'attente d'une réponse et le bandeau « Oups… » avec « Réessayer », pour l'accueil et la page réservée ; l'appel seul, sans bandeau ni attente, pour les états de l'accueil</td></tr>
     <tr><td><code>public/countdown.js</code></td><td>Le compte à rebours, à l'heure de Paris</td></tr>
     <tr><td><code>public/screens/password.js</code></td><td>Choisir son mot de passe (S2), le redonner (S3)</td></tr>
     <tr><td><code>public/screens/gift.js</code></td><td>Le paquet (S4)</td></tr>
     <tr><td><code>public/reservee.html</code>, <code>public/reserved.js</code></td><td>La page réservée (S6, S8), à <code>/reservee</code></td></tr>
+    <tr><td><code>api/participants.js</code></td><td>Chaque participant a-t-il un mot de passe ? Demandé par l'accueil à son ouverture</td></tr>
     <tr><td><code>api/participant.js</code></td><td>Le participant a-t-il un mot de passe ?</td></tr>
     <tr><td><code>api/choose-password.js</code></td><td>Choisir son mot de passe, faire le tirage s'il n'existe pas, donner le prénom tiré (S2, S7)</td></tr>
     <tr><td><code>api/open-gift.js</code></td><td>Redonner son mot de passe et recevoir le prénom tiré (S3)</td></tr>
@@ -107,6 +108,7 @@
   <p>Réponses JSON en <code>Cache-Control: no-store</code>. Signature Web de Vercel : <code>export async function POST(request)</code>. Les appels <code>POST</code> exigent du JSON (sinon 415) de 2 Ko au plus (sinon 413) ; un participant inconnu donne 400.</p>
   <div class="table"><table>
     <tr><th>Appel</th><th>Corps</th><th>Réponses</th></tr>
+    <tr><td><code>POST /api/participants</code></td><td><code>{}</code>, non lu</td><td>200 <code>{ hasPassword: { yannick: false, lea: true, … } }</code>, les sept dans l'ordre</td></tr>
     <tr><td><code>POST /api/participant</code></td><td><code>{ participant }</code></td><td>200 <code>{ hasPassword }</code></td></tr>
     <tr><td><code>POST /api/choose-password</code></td><td><code>{ participant, password }</code></td><td>200 <code>{ receiver }</code> · 422 <code>too_short</code> · 409 <code>already_chosen</code> · 429 <code>locked</code></td></tr>
     <tr><td><code>POST /api/open-gift</code></td><td><code>{ participant, password }</code></td><td>200 <code>{ receiver }</code> · 401 <code>wrong_password</code> · 429 <code>locked</code> · 409 <code>no_password</code></td></tr>
@@ -114,6 +116,9 @@
     <tr><td><code>GET /api/health</code></td><td>—</td><td>200 <code>{ ok, store, reservedPage }</code></td></tr>
   </table></div>
   <p>Toute autre réponse, une erreur 5xx, un réseau coupé ou aucune réponse en 15 secondes fait afficher « Oups, le site ne répond pas… » sur l'écran en cours.</p>
+  <div class="example"><span class="eyebrow">Les états de l'accueil (S1)</span>
+    <p>À chaque affichage de l'accueil, la page le dessine, puis demande <code>POST /api/participants</code>, sans indicateur, sans désactiver les boutons et sans bandeau. La réponse vit dans une variable jusqu'au changement d'écran. Au toucher d'un prénom dont l'état est connu, S2 ou S3 s'affiche sans autre appel ; sinon (pas encore de réponse, échec, 15 secondes passées), le toucher appelle <code>POST /api/participant</code> avec l'indicateur. Un état qui n'est plus vrai se corrige par les réponses existantes : <code>already_chosen</code> fait passer de S2 à S3, <code>no_password</code> de S3 à S2.</p>
+    <p>Une fonction à part plutôt qu'une action de <code>/api/participant</code> : une seule forme de réponse par appel, vérifiée par le test de fuite, et un corps inchangé pour <code>participant</code>. Elle ne lit que les empreintes, par un <code>MGET</code>, et ne renvoie que <code>hasPassword</code> par participant, ce que sept appels à <code>/api/participant</code> disaient déjà.</p></div>
   <div class="example"><span class="eyebrow">Choisir son mot de passe (S2, S7)</span>
     <ol>
       <li>Moins de 4 caractères, espaces au bout retirés : 422 <code>too_short</code>.</li>
@@ -178,7 +183,7 @@
     <li>Le style de la maquette, polices Pixelify Sans et Atkinson Hyperlegible depuis Google Fonts, un seul thème. Ni attribut <code>style</code> ni script en ligne : la politique de sécurité du contenu les refuse.</li>
     <li>Le compte à rebours prend la date du jour à Paris sur l'horloge de l'appareil.</li>
     <li>Sur une erreur réseau, une réponse 5xx ou une réponse qui n'arrive pas en 15 secondes, l'écran reste, avec le bandeau et « Réessayer », qui refait le même appel ; ce qui était tapé reste. Un appel dont l'écran a changé depuis ne montre ni sa réponse ni son bandeau.</li>
-    <li>Un seul appel à la fois : tant qu'une réponse est attendue, un nouvel appui sur le bouton d'envoi (et, sur la page réservée, sur « Effacer », « Refaire le tirage » ou « Annuler ») ne fait rien. Un double appui ne compte qu'un essai ; pendant le bandeau, le bouton refait l'appel. L'appui sur un prénom de l'accueil est gardé de même : les sept boutons sont désactivés pendant l'attente et redeviennent actifs avec le bandeau.</li>
+    <li>Un seul appel à la fois : tant qu'une réponse est attendue, un nouvel appui sur le bouton d'envoi (et, sur la page réservée, sur « Effacer », « Refaire le tirage » ou « Annuler ») ne fait rien. Un double appui ne compte qu'un essai ; pendant le bandeau, le bouton refait l'appel. L'appui sur un prénom de l'accueil dont l'état n'est pas connu est gardé de même : les sept boutons sont désactivés pendant l'attente et redeviennent actifs avec le bandeau.</li>
   </ul>
 </section>
 
@@ -194,7 +199,7 @@
     <tr><td>Le cache</td><td><code>no-store</code> sur les fonctions et les deux pages HTML</td></tr>
   </table></div>
   <p>En-têtes de <code>vercel.json</code> : <code>Content-Security-Policy</code> (<code>default-src 'self'</code>, Google Fonts, <code>frame-ancestors 'none'</code>, <code>base-uri 'none'</code>, <code>form-action 'self'</code>), <code>nosniff</code>, <code>Referrer-Policy: no-referrer</code>, <code>X-Robots-Tag: noindex</code>.</p>
-  <p><strong>Limites acceptées</strong> (« rien n'est très sensible ») : un mot de passe de quatre lettres se devine à 5 essais par minute pour qui s'acharne des jours ; n'importe qui peut bloquer un participant ou la page réservée une minute ; qui touche le prénom d'un autre à sa première visite voit son tirage ; qui détient le mot de passe d'administration peut effacer le mot de passe d'un participant, en choisir un pour lui et voir son tirage, la seule trace étant que la personne retombe sur « C'est ta première visite ». Seul Yannick a ce mot de passe ; il est conseillé de le choisir long (5 essais par minute).</p>
+  <p><strong>Limites acceptées</strong> (« rien n'est très sensible ») : un mot de passe de quatre lettres se devine à 5 essais par minute pour qui s'acharne des jours ; n'importe qui peut bloquer un participant ou la page réservée une minute ; n'importe qui peut savoir qui a déjà choisi son mot de passe ; qui touche le prénom d'un autre à sa première visite voit son tirage ; qui détient le mot de passe d'administration peut effacer le mot de passe d'un participant, en choisir un pour lui et voir son tirage, la seule trace étant que la personne retombe sur « C'est ta première visite ». Seul Yannick a ce mot de passe ; il est conseillé de le choisir long (5 essais par minute).</p>
 </section>
 
 <section>
@@ -226,7 +231,7 @@
     <tr><td>Un seul tirage</td><td>Deux choix simultanés sur un double qui intercale les appels : un seul tirage écrit</td></tr>
     <tr><td>Le tirage refait</td><td>Tout est effacé, la liste en réponse, sans tirage ; course forcée sur le double : un tirage refait placé avant chaque commande d'un choix ou d'un retour du mot de passe, coupé ou non : qui garde un mot de passe a le prénom du tirage gardé. Le test échoue sans la relecture du tirage</td></tr>
     <tr><td>Les essais ratés</td><td>Horloge avancée : remise à zéro, blocage, déblocage après 60 secondes ; essais simultanés, ou comptés après la remise à zéro d'un blocage : 5 vérifications au plus ; un compte laissé sans blocage ne bloque qu'une minute</td></tr>
-    <tr><td>Rien de secret envoyé</td><td>Un parcours complet avec des mots de passe témoins : aucune réponse ne contient d'empreinte, de sel, de mot de passe, <code>ADMIN_PASSWORD</code>, ni le tirage d'un autre</td></tr>
+    <tr><td>Rien de secret envoyé</td><td>Un parcours complet avec des mots de passe témoins : aucune réponse ne contient d'empreinte, de sel, de mot de passe, <code>ADMIN_PASSWORD</code>, ni le tirage d'un autre ; les états de l'accueil n'ont que <code>hasPassword</code> par participant</td></tr>
     <tr><td>Les écrans</td><td>Mots exacts, états, tailles, 360 pixels, appels interceptés ; puis le parcours complet sans interception</td></tr>
   </table></div>
   <p>Jamais la base de production : le double en mémoire, en local et dans l'intégration continue. Tirages et mots de passe fictifs.</p>

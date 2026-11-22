@@ -23,7 +23,7 @@ Téléphone (navigateur)            Vercel (une adresse racine)              Ups
 
 - **Pages statiques** dans `public/`, servies telles quelles : pas de framework, pas de
   bundler, pas d'étape de build. Le JavaScript du navigateur est en modules ES natifs.
-- **Quatre fonctions Vercel** dans `api/` (et `api/health.js`), en JavaScript, qui
+- **Cinq fonctions Vercel** dans `api/` (et `api/health.js`), en JavaScript, qui
   appellent les règles du domaine de `lib/`. Elles seules lisent et écrivent la base.
 - **Une base Redis Upstash**, installée sur le projet Vercel par la Vercel Marketplace,
   qui garde le tirage, les empreintes des mots de passe et les compteurs d'essais.
@@ -37,12 +37,13 @@ Téléphone (navigateur)            Vercel (une adresse racine)              Ups
 |---|---|
 | `public/index.html` | L'accueil et le conteneur des écrans du participant ; liens vers les polices, `style.css`, `app.js` |
 | `public/style.css` | Le style de tous les écrans, repris de la maquette (`docs/site/epics/1-tirage-maquette.html`), sans les réglages de la maquette |
-| `public/app.js` | L'état en mémoire des écrans du participant, l'accueil (S1), le passage d'un écran à l'autre sans entrée d'historique (S5), les appels par `call.js` |
-| `public/call.js` | L'appel aux fonctions (`call`), l'attente d'une réponse (`waiting`) et le bandeau « Oups, le site ne répond pas… » avec « Réessayer », repris par `app.js` et `reserved.js` |
+| `public/app.js` | L'état en mémoire des écrans du participant, l'accueil (S1) et les états des participants qu'il demande, le passage d'un écran à l'autre sans entrée d'historique (S5), les appels par `call.js` |
+| `public/call.js` | L'appel aux fonctions (`call`), l'attente d'une réponse (`waiting`) et le bandeau « Oups, le site ne répond pas… » avec « Réessayer », repris par `app.js` et `reserved.js` ; l'appel seul, sans bandeau ni attente (`attempt`), pour les états de l'accueil |
 | `public/countdown.js` | Le compte à rebours de S1, fonction pure de la date du jour à Paris |
 | `public/screens/password.js` | Les écrans du mot de passe : le choisir (S2), le redonner (S3) |
 | `public/screens/gift.js` | L'écran du paquet (S4), paquet en pixels et ouverture |
 | `public/reservee.html`, `public/reserved.js` | La page réservée (S6, S8), servie à `/reservee` |
+| `api/participants.js` | `POST /api/participants` : chaque participant a-t-il un mot de passe ? Demandé par l'accueil à son ouverture (S1) |
 | `api/participant.js` | `POST /api/participant` : le participant a-t-il un mot de passe ? |
 | `api/choose-password.js` | `POST /api/choose-password` : choisir son mot de passe, faire le tirage s'il n'existe pas, donner le prénom tiré (S2, S7) |
 | `api/open-gift.js` | `POST /api/open-gift` : redonner son mot de passe et recevoir le prénom tiré (S3) |
@@ -52,7 +53,7 @@ Téléphone (navigateur)            Vercel (une adresse racine)              Ups
 | `lib/draw.js` | Le tirage : une permutation sans point fixe, tirée au hasard uniforme (S7) |
 | `lib/password.js` | Mot de passe : normalisation, règle des 4 caractères, empreinte scrypt et vérification |
 | `lib/attempts.js` | La règle des 5 essais ratés (S3, S6, D9) |
-| `lib/gift.js` | Les actions du participant : état, choix du mot de passe, ouverture du paquet, tirage fait une seule fois |
+| `lib/gift.js` | Les actions du participant : état, états de tous pour l'accueil, choix du mot de passe, ouverture du paquet, tirage fait une seule fois |
 | `lib/reserved.js` | Les actions de la page réservée : vérification du mot de passe d'administration, liste, effacement, tirage refait |
 | `lib/store.js` | Le stockage : l'interface, sa version Redis (Upstash) et le choix de la version selon l'environnement |
 | `lib/memory-store.js` | Le double en mémoire du stockage, pour les tests et le serveur local |
@@ -91,6 +92,7 @@ passe qui n'est pas du texte, 400 `invalid_password`, sans rien écrire ni compt
 
 | Appel | Corps | Réponses |
 |---|---|---|
+| `POST /api/participants` | `{}` (son contenu n'est pas lu) | 200 `{ hasPassword: { yannick: false, lea: true, … } }`, les sept identifiants dans l'ordre du périmètre |
 | `POST /api/participant` | `{ participant }` | 200 `{ hasPassword }` |
 | `POST /api/choose-password` | `{ participant, password }` | 200 `{ receiver }` (le prénom tiré) · 422 `too_short` · 409 `already_chosen` · 429 `locked` |
 | `POST /api/open-gift` | `{ participant, password }` | 200 `{ receiver }` · 401 `wrong_password` · 429 `locked` · 409 `no_password` |
@@ -100,6 +102,28 @@ passe qui n'est pas du texte, 400 `invalid_password`, sans rien écrire ni compt
 Les erreurs ont la forme `{ error: "<code>" }`. Toute autre réponse, une erreur 5xx, un
 réseau coupé ou aucune réponse en 15 secondes fait afficher le bandeau « Oups, le site ne répond pas… » sur l'écran en
 cours.
+
+### Les états de l'accueil (S1)
+
+À chaque affichage de l'accueil (ouverture, rechargement, retour à l'accueil), `app.js`
+dessine l'accueil, puis demande `POST /api/participants` par `attempt` de `call.js`, sans
+indicateur, sans désactiver les boutons et sans bandeau. Sa réponse est gardée dans une
+variable de la page jusqu'au changement d'écran, puis oubliée (S5) ; une réponse arrivée
+après un changement d'écran est ignorée. Au toucher d'un prénom dont l'état est connu,
+l'écran S2 ou S3 s'affiche sans autre appel ; sinon (réponse pas encore arrivée, réseau
+coupé, erreur, 15 secondes passées), le toucher appelle `POST /api/participant` avec
+l'indicateur, comme sans ces états.
+
+Un état lu peut ne plus être vrai au toucher (mot de passe choisi ailleurs, effacé, tirage
+refait) : les réponses existantes corrigent l'écran. Sur S2, `already_chosen` fait passer à
+S3 (un autre mot de passe que celui choisi compte alors un essai raté, comme en T1) ; sur S3,
+`no_password` fait passer à S2.
+
+Une fonction à part plutôt qu'une action de `POST /api/participant` : chaque appel garde une
+seule forme de réponse, que le test de fuite vérifie par adresse, et `participant.js` garde
+son corps `{ participant }` sans champ d'action ni erreur de plus. La fonction ne lit que
+`password:<id>`, par un seul `MGET`, comme la liste de la page réservée, et ne renvoie que
+`hasPassword` par participant : ce que sept appels à `POST /api/participant` disaient déjà.
 
 ### Choisir son mot de passe (S2, S7)
 
@@ -253,14 +277,14 @@ peut avancer.
   attribut `style` ni script en ligne : la politique de sécurité du contenu les refuse.
 - **Le compte à rebours** prend la date du jour à Paris sur l'horloge de l'appareil
   (`Intl.DateTimeFormat` avec `timeZone: "Europe/Paris"`).
-- **Le réseau** : `call(path, body, isCurrent)` de `call.js` fait l'appel ; sur une erreur réseau, une réponse 5xx ou une réponse qui n'arrive pas en 15 secondes, l'écran reste affiché avec le bandeau et « Réessayer », qui refait le même appel ; ce qui était tapé reste dans le champ. Les 15 secondes laissent passer une connexion mobile lente et le démarrage à froid d'une fonction ; un appel abandonné qui a abouti côté serveur est sans risque, car une fonction refaite rend la même réponse ou une erreur gérée par l'écran (T1) ; seul un mauvais mot de passe abandonné puis réessayé compte deux essais ratés. `isCurrent`, rendu par `turn()` de `app.js`, dit si l'écran a changé depuis l'appel : sa réponse est alors ignorée et son bandeau n'est pas montré ; un changement d'écran ou un nouvel appel retire le bandeau d'un appel précédent. Un seul appel à la fois : tant que `waiting()` de `call.js` dit qu'une réponse de l'écran affiché est attendue, un nouvel appui sur son bouton d'envoi (et, sur la page réservée, sur « Effacer », « Refaire le tirage » ou « Annuler ») ne fait rien ; un double appui ne compte donc qu'un essai, et la liste de la page réservée montre la dernière réponse reçue. Pendant le bandeau, aucune réponse n'est attendue : le bouton refait l'appel. L'appui sur un prénom de l'accueil est gardé de même : pendant l'attente, les sept boutons portent `aria-disabled` et le prénom touché `aria-busy`, avec l'indicateur de chargement ; `app.js` relit `waiting()` quand le bandeau apparaît ou disparaît, et les boutons redeviennent actifs avec le bandeau.
+- **Le réseau** : `call(path, body, isCurrent)` de `call.js` fait l'appel ; sur une erreur réseau, une réponse 5xx ou une réponse qui n'arrive pas en 15 secondes, l'écran reste affiché avec le bandeau et « Réessayer », qui refait le même appel ; ce qui était tapé reste dans le champ. Les 15 secondes laissent passer une connexion mobile lente et le démarrage à froid d'une fonction ; un appel abandonné qui a abouti côté serveur est sans risque, car une fonction refaite rend la même réponse ou une erreur gérée par l'écran (T1) ; seul un mauvais mot de passe abandonné puis réessayé compte deux essais ratés. `isCurrent`, rendu par `turn()` de `app.js`, dit si l'écran a changé depuis l'appel : sa réponse est alors ignorée et son bandeau n'est pas montré ; un changement d'écran ou un nouvel appel retire le bandeau d'un appel précédent. Un seul appel à la fois : tant que `waiting()` de `call.js` dit qu'une réponse de l'écran affiché est attendue, un nouvel appui sur son bouton d'envoi (et, sur la page réservée, sur « Effacer », « Refaire le tirage » ou « Annuler ») ne fait rien ; un double appui ne compte donc qu'un essai, et la liste de la page réservée montre la dernière réponse reçue. Pendant le bandeau, aucune réponse n'est attendue : le bouton refait l'appel. L'appui sur un prénom de l'accueil dont l'état n'est pas connu ([Les états de l'accueil](#les-états-de-laccueil-s1)) est gardé de même : pendant l'attente, les sept boutons portent `aria-disabled` et le prénom touché `aria-busy`, avec l'indicateur de chargement ; `app.js` relit `waiting()` quand le bandeau apparaît ou disparaît, et les boutons redeviennent actifs avec le bandeau.
 
 ## Sécurité
 
 | Ce qui est protégé | Comment |
 |---|---|
 | Le tirage | Il ne sort de la base que par `choose-password` et `open-gift`, une fois le mot de passe vérifié, et seulement le prénom tiré par ce participant. Aucun appel ne donne le tirage en entier, ni qui offre à qui que ce soit. La page réservée ne le lit jamais : elle peut seulement l'effacer, avec tous les mots de passe (S8) |
-| Les mots de passe des participants | Empreinte scrypt salée, jamais renvoyée ; 5 essais ratés de suite bloquent le participant une minute |
+| Les mots de passe des participants | Empreinte scrypt salée, jamais renvoyée ; 5 essais ratés de suite bloquent le participant une minute. `participant` et `participants` disent seulement si un mot de passe est choisi |
 | Le mot de passe d'administration | Variable d'environnement Vercel posée par Yannick, de type sensible ; aucun agent ne la connaît ; comparée en temps constant ; même règle des 5 essais |
 | Les jetons de la base | Variables posées par l'intégration Upstash, lues seulement par les fonctions ; aucun fichier de `public/` ne les cite |
 | L'appareil prêté | Rien n'est retenu (S5) |
@@ -275,7 +299,8 @@ En-têtes posés par `vercel.json` sur tout le site : `Content-Security-Policy`
 Limites acceptées (« rien n'est très sensible », décision de Yannick) : un mot de passe de
 quatre lettres se devine à raison de 5 essais par minute pour qui s'acharne des jours ;
 n'importe qui peut bloquer un participant ou la page réservée une minute en se trompant
-cinq fois ; qui choisit le prénom d'un autre à sa première visite voit son tirage
+cinq fois ; n'importe qui peut savoir qui a déjà choisi son mot de passe, par
+`POST /api/participants` comme par `POST /api/participant` ; qui choisit le prénom d'un autre à sa première visite voit son tirage
 (« États vides et cassés » de la spec) ; qui détient le mot de passe d'administration peut
 effacer le mot de passe d'un participant, en choisir un pour lui et voir son tirage, et la
 seule trace est que la personne retombe sur « C'est ta première visite » (accepté par
@@ -363,7 +388,7 @@ d'une base gratuite peu utilisée.
 | Un seul tirage (S7) | `tests/unit/gift.test.js` | Deux choix simultanés de deux participants, sur un double dont `get` rend la main avant `setIfAbsent` : un seul `draw` écrit, et les deux reçoivent un prénom de ce tirage |
 | Le tirage refait (S8) | `tests/unit/redraw.test.js` | Tirage, mots de passe, compteurs et blocages effacés, liste en réponse, sans tirage ; mot de passe d'administration et règle des 5 essais. Course forcée sur le double : les commandes d'un tirage refait, coupé en deux blocs (après `DEL draw`, après `DEL password:yannick`, ou d'un seul tenant), placées avant chaque commande d'un choix ou d'un `open-gift` de Yannick ; dans chaque cas, s'il garde un mot de passe, un tirage existe et le prénom répondu est le sien. Le même test échoue sans la relecture du tirage, ou avec les mots de passe effacés avant le tirage |
 | Les essais ratés (S3, S6) | `tests/unit/attempts.test.js` | Horloge avancée : 4 ratés puis 1 bon, compte à zéro ; 5 ratés, blocage, bon mot de passe refusé, débloqué après 60 secondes ; 100 essais simultanés, et 50 envoyés à la suite pendant des vérifications lentes : 5 vérifications au plus ; des essais comptés après la remise à zéro d'un blocage n'ont aucune vérification ; un compte laissé sans blocage ne bloque qu'une minute |
-| Rien de secret n'est envoyé (sûreté) | `tests/securite/fuite.test.js` | Un parcours complet sur le double en mémoire, avec un tirage fictif et des mots de passe témoins ; chaque réponse (pages, scripts, JSON) est cherchée : ni empreinte, ni sel, ni mot de passe, ni `ADMIN_PASSWORD`, ni le tirage d'un autre, ni le tirage entier ; `public/` ne cite aucun nom de variable d'environnement |
+| Rien de secret n'est envoyé (sûreté) | `tests/securite/fuite.test.js` | Un parcours complet sur le double en mémoire, avec un tirage fictif et des mots de passe témoins ; chaque réponse (pages, scripts, JSON) est cherchée : ni empreinte, ni sel, ni mot de passe, ni `ADMIN_PASSWORD`, ni le tirage d'un autre, ni le tirage entier ; la réponse de `participants` n'a que `hasPassword`, un booléen par participant ; `public/` ne cite aucun nom de variable d'environnement |
 | Les écrans | `tests/e2e/*.spec.js` | Les mots exacts, les états, les tailles (48 et 56 pixels, texte de 20 pixels), 360 pixels sans défilement horizontal, appels interceptés par `page.route` selon le tableau des fonctions ; le parcours complet sans interception |
 
 Les tests n'utilisent que le double en mémoire, en local et dans l'intégration continue,

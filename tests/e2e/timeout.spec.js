@@ -16,6 +16,15 @@ test.beforeEach(async ({ page }) => {
 });
 
 /**
+ * Makes POST /api/participants fail, so that a tap on a first name calls POST
+ * /api/participant.
+ * @param {import("@playwright/test").Page} page
+ */
+function withoutStates(page) {
+  return page.route("**/api/participants", (route) => route.abort("internetdisconnected"));
+}
+
+/**
  * Opens `path`, then stops the clock of the page, which only moves by runFor from then on.
  * @param {import("@playwright/test").Page} page
  * @param {string} path
@@ -29,6 +38,7 @@ test("an answer that never comes: banner at the end of the delay, « Réessayer 
   page,
 }) => {
   let attempts = 0;
+  await withoutStates(page);
   await page.route("**/api/participant", (route) => {
     attempts += 1;
     // The first call is left without an answer.
@@ -55,6 +65,7 @@ test("a slow answer within the delay shows the screen, and no banner later", asy
     answer = () => resolve(undefined);
   });
   let attempts = 0;
+  await withoutStates(page);
   await page.route("**/api/participant", async (route) => {
     attempts += 1;
     await answered;
@@ -70,6 +81,24 @@ test("a slow answer within the delay shows the screen, and no banner later", asy
   await expect(page.getByRole("alert")).toHaveCount(0);
   await expect(page.getByText("Bonjour Léa !")).toBeVisible();
   expect(attempts).toBe(1);
+});
+
+test("the states of the home page without an answer: no banner, the tap calls POST /api/participant", async ({
+  page,
+}) => {
+  let asked = 0;
+  await page.route("**/api/participants", () => {
+    asked += 1;
+  });
+  await page.route("**/api/participant", (route) => route.fulfill({ json: { hasPassword: true } }));
+  await open(page, "/");
+  await expect.poll(() => asked).toBe(1);
+  await page.clock.runFor(2 * delay);
+  await expect(page.getByRole("alert")).toHaveCount(0);
+  await page.getByRole("button", { name: "Léa" }).click();
+  await expect(page.getByText("Bonjour Léa !")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Voir mon tirage" })).toBeVisible();
+  await expect(page.getByRole("alert")).toHaveCount(0);
 });
 
 test("« Effacer » without an answer: banner at the end of the delay, « Réessayer » erases", async ({

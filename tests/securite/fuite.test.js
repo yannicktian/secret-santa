@@ -11,6 +11,7 @@ import { POST as choosePassword } from "../../api/choose-password.js";
 import { GET as health } from "../../api/health.js";
 import { POST as openGift } from "../../api/open-gift.js";
 import { POST as participant } from "../../api/participant.js";
+import { POST as participantStates } from "../../api/participants.js";
 import { POST as reserved } from "../../api/reserved.js";
 import { normalizePassword } from "../../lib/password.js";
 import { getStore } from "../../lib/store.js";
@@ -148,6 +149,9 @@ const open = (id, password) =>
 const admin = (password, action, id) =>
   call(`reserved ${action}`, "/api/reserved", reserved, { password, action, participant: id });
 
+/** The state of the seven participants, asked for by the home page as it opens (S1). */
+const states = () => call("states", "/api/participants", participantStates, {});
+
 /** The complete journey, every answer kept in `answers`. */
 async function journey() {
   assert.equal(await getStore().setIfAbsent("draw", JSON.stringify(draw)), true);
@@ -162,6 +166,7 @@ async function journey() {
   });
 
   // S1, S2: Léa arrives, a password too short, then hers; the gift gives Mamet.
+  assert.equal((await states()).body.hasPassword.lea, false);
   const state = { participant: "lea" };
   assert.deepEqual((await call("state lea", "/api/participant", participant, state)).body, {
     hasPassword: false,
@@ -170,6 +175,7 @@ async function journey() {
   assert.equal((await choose("lea", passwords.lea)).body.receiver, "Mamet");
 
   // S3: she comes back; a wrong one, the same in capitals, another one on the first screen.
+  assert.equal((await states()).body.hasPassword.lea, true);
   assert.deepEqual((await call("state lea", "/api/participant", participant, state)).body, {
     hasPassword: true,
   });
@@ -195,6 +201,7 @@ async function journey() {
     assert.equal((await open("christine", passwords.wrong)).status, i < 5 ? 401 : 429);
   }
   assert.equal((await open("christine", passwords.christine)).status, 429);
+  assert.equal((await states()).body.hasPassword.christine, true);
   assert.equal((await admin(adminPassword, "erase", "christine")).status, 200);
 
   // Errors of the functions.
@@ -211,6 +218,7 @@ async function journey() {
   assert.equal(redone.status, 200);
   assert.ok(redone.body.participants.every((/** @type {any} */ p) => !p.hasPassword));
   assert.equal(await getStore().get("draw"), null);
+  assert.ok(Object.values((await states()).body.hasPassword).every((has) => has === false));
 
   // S6: 5 wrong administration passwords, then locked even with the right one.
   for (let i = 1; i <= 5; i += 1) {
@@ -269,6 +277,11 @@ function checkShape(answer, body) {
     assert.match(body.error, /^[a-z_]+$/, where);
   } else if (answer.path === "/api/participant") {
     assert.deepEqual(Object.keys(body), ["hasPassword"], where);
+  } else if (answer.path === "/api/participants") {
+    // Only whether each participant has a password, by id, in the order of the scope.
+    assert.deepEqual(Object.keys(body), ["hasPassword"], where);
+    assert.deepEqual(Object.keys(body.hasPassword), Object.keys(names), where);
+    for (const has of Object.values(body.hasPassword)) assert.equal(typeof has, "boolean", where);
   } else if (answer.path === "/api/reserved") {
     assert.deepEqual(Object.keys(body), ["participants"], where);
     for (const row of body.participants) {

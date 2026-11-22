@@ -53,9 +53,11 @@ Critères :
   le compte à rebours ne s'affichent plus.
 - Chaque bouton de participant fait au moins 56 pixels de haut et toute sa surface est
   cliquable.
-- Dès qu'on touche un prénom, son bouton montre un indicateur de chargement en pixels, sans
-  texte, à la place de sa flèche, et les sept boutons sont désactivés jusqu'à la réponse :
-  un second toucher n'a pas d'effet. Avec le réglage « moins d'animations » de l'appareil,
+- L'accueil s'affiche sans attendre le site. Toucher un prénom affiche aussitôt l'écran du
+  mot de passe (S2 ou S3) quand le site a déjà dit, depuis l'ouverture de l'accueil, si ce
+  participant a choisi le sien. Sinon, son bouton montre un indicateur de chargement en
+  pixels, sans texte, à la place de sa flèche, et les sept boutons sont désactivés jusqu'à
+  la réponse : un second toucher n'a pas d'effet. Avec le réglage « moins d'animations » de l'appareil,
   l'indicateur ne s'anime pas. Si le site ne répond pas, les boutons redeviennent actifs
   avec « Oups, le site ne répond pas… ».
 - Aucun lien de l'accueil ne mène à la page réservée.
