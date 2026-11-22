@@ -9,7 +9,7 @@
 <link rel="stylesheet" href="../style.css">
 </head>
 <body>
-<nav><a href="../index.html">Accueil</a><a href="1-tirage.html">Epic 1 — Le tirage</a></nav>
+<nav><a href="../index.html">Accueil</a><a href="1-tirage.html">Epic 1 — Le tirage</a><a href="../architecture.html">Architecture</a></nav>
 <main>
 <header style="display:flex;flex-direction:column;gap:8px">
   <span class="eyebrow">Epic <a href="https://github.com/yannicktian/secret-santa/issues/1">#1</a> · spec</span>
@@ -219,6 +219,81 @@
   <p>Dans un écran de téléphone, sur un tirage fictif. Sur ton téléphone, ouvre-la en plein écran. Yannick et Léa ont déjà le mot de passe <code>sapin</code> ; les autres arrivent pour la première fois. Les réglages à côté de l'écran changent la date, simulent une coupure et ouvrent la page réservée.</p>
   <div class="mockup"><iframe src="1-tirage-maquette.html" title="Maquette cliquable du site"></iframe></div>
   <p><a href="1-tirage-maquette.html">Ouvrir la maquette en plein écran</a></p>
+</section>
+
+<section id="architecture">
+  <h2>Architecture technique</h2>
+  <p>Des pages statiques et quatre fonctions sur Vercel, une base Redis Upstash. Le téléphone ne garde rien : chaque fois qu'il faut voir son tirage ou ouvrir la page réservée, il envoie le mot de passe, et la fonction le vérifie.</p>
+  <div class="diagram"><svg viewBox="0 0 760 290" role="img" aria-labelledby="schema-titre">
+    <title id="schema-titre">Le téléphone charge les pages statiques, appelle les fonctions Vercel avec le mot de passe ; seules les fonctions lisent et écrivent la base Redis.</title>
+    <defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0 0L10 5L0 10z"/></marker></defs>
+    <rect class="box" x="10" y="40" width="190" height="210" rx="8"/>
+    <text class="t" x="24" y="66">Téléphone</text>
+    <text class="s" x="24" y="88">navigateur, ou celui</text>
+    <text class="s" x="24" y="104">de WhatsApp, d'un SMS</text>
+    <text class="s" x="24" y="136">les écrans de la spec</text>
+    <text class="s" x="24" y="152">en JavaScript</text>
+    <text class="s" x="24" y="184">rien n'est retenu :</text>
+    <text class="s" x="24" y="200">ni cookie, ni stockage</text>
+    <rect class="box" x="270" y="10" width="230" height="270" rx="8"/>
+    <text class="t" x="284" y="34">Vercel · une adresse</text>
+    <rect class="hot" x="284" y="50" width="202" height="76" rx="6"/>
+    <text class="t" x="298" y="74">Pages statiques</text>
+    <text class="m" x="298" y="94">public/</text>
+    <text class="s" x="298" y="112">/ et /reservee, sans build</text>
+    <rect class="hot" x="284" y="146" width="202" height="118" rx="6"/>
+    <text class="t" x="298" y="170">Fonctions</text>
+    <text class="m" x="298" y="190">api/participant</text>
+    <text class="m" x="298" y="206">api/choose-password</text>
+    <text class="m" x="298" y="222">api/open-gift</text>
+    <text class="m" x="298" y="238">api/reserved</text>
+    <text class="s" x="298" y="256">règles dans lib/</text>
+    <rect class="box" x="570" y="80" width="180" height="170" rx="8"/>
+    <text class="t" x="584" y="104">Upstash Redis</text>
+    <text class="m" x="584" y="130">draw</text>
+    <text class="m" x="584" y="150">password:&lt;id&gt;</text>
+    <text class="m" x="584" y="170">fails:&lt;id&gt;</text>
+    <text class="m" x="584" y="190">lock:&lt;id&gt;</text>
+    <text class="s" x="584" y="220">lue et écrite par</text>
+    <text class="s" x="584" y="236">les seules fonctions</text>
+    <path class="a" d="M200 88H282"/>
+    <text class="s" x="210" y="80">pages</text>
+    <path class="a" d="M200 180H282"/>
+    <text class="s" x="206" y="172">mot de passe</text>
+    <path class="a" d="M282 214H200"/>
+    <text class="s" x="206" y="232">son prénom</text>
+    <text class="s" x="206" y="246">tiré, seul</text>
+    <path class="a" d="M486 190H568"/>
+    <path class="a" d="M568 214H486"/>
+  </svg></div>
+  <ul>
+    <li><strong>Le tirage, une seule fois</strong> : au premier mot de passe choisi, la fonction propose un tirage et l'écrit par <code>SET draw … NX</code>. Si Léa et Anne valident en même temps, Redis n'en garde qu'un, et chacune relit celui-là. Rien ne le réécrit ensuite.</li>
+    <li><strong>Au hasard</strong> : les participants sont mélangés, et le mélange recommence tant que quelqu'un se tire lui-même ; chacun des 1 854 tirages possibles a la même chance. Un test en simule 185 400.</li>
+    <li><strong>Le mot de passe</strong> : mis en minuscules, sans accents ni espaces au bout (« Noël » devient <code>noel</code>), puis gardé en empreinte scrypt salée, jamais en clair.</li>
+    <li><strong>Les essais ratés</strong> : un compteur par participant ; au cinquième raté de suite, une clé de blocage qui s'efface seule après 60 secondes ; un bon essai remet le compteur à zéro.</li>
+    <li><strong>La page réservée</strong>, à <code>/reservee</code> : chaque liste et chaque effacement portent le mot de passe d'administration, posé par Yannick dans Vercel ; elle ne lit jamais le tirage.</li>
+    <li><strong>Rien de secret n'est envoyé au navigateur</strong> : seulement le prénom tiré, à son participant, après son mot de passe ; un test le vérifie sur tout un parcours fictif.</li>
+  </ul>
+  <div class="example"><span class="eyebrow">Ce que la base contient (exemple fictif)</span>
+<pre>draw            {"yannick":"christine","lea":"mamet", …}
+password:lea    scrypt$16384$8$1$&lt;sel&gt;$&lt;empreinte&gt;
+fails:anne      2
+lock:guigui     1   (s'efface dans 60 s)</pre></div>
+  <p><a href="../architecture.html">L'architecture complète</a> · le Markdown fait foi : <a href="https://github.com/yannicktian/secret-santa/blob/main/docs/architecture.md">docs/architecture.md</a>.</p>
+</section>
+
+<section id="illustrations">
+  <h2>Illustrations des tâches</h2>
+  <h3>Les lots</h3>
+  <p>Les tâches d'un lot partent ensemble, chacune dès que ce qu'elle attend est fusionné. Le découpage fait foi : <a href="https://github.com/yannicktian/secret-santa/blob/main/docs/plans/tirage.md">docs/plans/tirage.md</a>.</p>
+  <div class="lots">
+    <div class="lot"><strong>Lot 1</strong><span>1 · Socle, contrôles et santé</span><span class="wait-for">Attend : rien</span></div>
+    <div class="lot"><strong>Lot 2</strong><span>2 · Stockage et essais ratés</span><span>3 · Le tirage</span><span>4 · Mots de passe</span><span>5 · Accueil et style</span><span>6 · Premier déploiement</span><span class="wait-for">Attend : 1 ; pour la 6, le projet Vercel relié au repo</span></div>
+    <div class="lot"><strong>Lot 3</strong><span>7 · Fonctions du participant</span><span>8 · Fonction de la page réservée</span><span>9 · Écrans du mot de passe</span><span>10 · Écran du paquet</span><span>11 · Écrans de la page réservée</span><span class="wait-for">Attend : 7 ← 2, 3, 4 · 8 ← 2, 3 · 9, 10, 11 ← 5</span></div>
+    <div class="lot"><strong>Lot 4</strong><span>12 · Parcours complet et test de fuite</span><span class="wait-for">Attend : 7 à 11</span></div>
+    <div class="lot"><strong>Lot 5</strong><span>13 · Mise en ligne</span><span class="wait-for">Attend : 6, 12 et le mot de passe d'administration</span></div>
+  </div>
+  <p>Ce qui reste à Yannick : donner à l'application Vercel de GitHub l'accès au repo, pour que chaque fusion soit mise en production (tâche 6), et poser le mot de passe d'administration en production (tâche 13). À la fin, il ouvre la page réservée en production, voit les sept « Pas encore de mot de passe », et envoie le lien. Les tests tournent sur un double de la base en mémoire ; seule la production a Redis.</p>
 </section>
 </main>
 </body>
